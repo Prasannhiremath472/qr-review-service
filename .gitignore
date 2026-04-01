@@ -1,0 +1,5 @@
+qr-review-service
+main
+*.exe
+.env
+.env.production
