@@ -47,4 +47,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/rogpeppe/go-internal => github.com/rogpeppe/go-internal v1.12.0
