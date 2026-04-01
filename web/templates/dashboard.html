@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Codes - {{.ShopName}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .qr-card { break-inside: avoid; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    {{if .Error}}
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+            <div class="text-red-500 text-5xl mb-4">⚠</div>
+            <h1 class="text-xl font-semibold text-gray-800 mb-2">Error</h1>
+            <p class="text-gray-600">{{.Error}}</p>
+        </div>
+    </div>
+    {{else}}
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">{{.ShopName}}</h1>
+            <p class="text-gray-500 mt-1">QR codes for collecting Google Reviews</p>
+            <button onclick="window.print()" class="no-print mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">
+                Print All QR Codes
+            </button>
+        </div>
+
+        <!-- QR Code Grid -->
+        {{if .QRCodes}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{range .QRCodes}}
+            <div class="qr-card bg-white rounded-2xl shadow-lg p-6 text-center">
+                <!-- QR Image -->
+                <img src="{{.ImageURL}}" alt="QR Code for {{.Label}}" class="w-48 h-48 mx-auto mb-4 rounded-lg">
+
+                <!-- Label -->
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">{{.Label}}</h3>
+                {{if .Label}}{{else}}<h3 class="text-lg font-semibold text-gray-400 mb-1">No Label</h3>{{end}}
+
+                <!-- Stats -->
+                <p class="text-sm text-gray-400 mb-3">Scans: <span class="font-medium text-gray-600">{{.ScanCount}}</span></p>
+
+                <!-- QR ID -->
+                <p class="text-xs text-gray-300 mb-3 font-mono">ID: {{.ID}}</p>
+
+                <!-- Scan URL -->
+                <div class="bg-gray-50 rounded-lg p-2 mb-3">
+                    <p class="text-xs text-gray-500 break-all">{{.ScanURL}}</p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2 no-print">
+                    <a href="{{.ScanURL}}" target="_blank"
+                        class="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm hover:bg-green-700 transition text-center">
+                        Test Scan
+                    </a>
+                    <a href="{{.ImageURL}}" download="qr-{{.ID}}.png"
+                        class="flex-1 bg-gray-600 text-white py-2 rounded-lg text-sm hover:bg-gray-700 transition text-center">
+                        Download
+                    </a>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
+            <p class="text-gray-400 text-lg">No QR codes created yet.</p>
+            <p class="text-gray-300 text-sm mt-2">Use POST /api/v1/qr-reviews/qr to create one.</p>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</body>
+</html>

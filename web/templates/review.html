@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Your Experience - {{.ShopName}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .star { cursor: pointer; transition: transform 0.2s, color 0.2s; }
+        .star:hover { transform: scale(1.2); }
+        .star.active { color: #facc15; }
+        .star.inactive { color: #d1d5db; }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 32px; height: 32px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    {{if .Error}}
+    <!-- Error State -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+        <div class="text-red-500 text-5xl mb-4">⚠</div>
+        <h1 class="text-xl font-semibold text-gray-800 mb-2">Oops!</h1>
+        <p class="text-gray-600">{{.Error}}</p>
+    </div>
+    {{else}}
+    <div id="app" class="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full">
+        <!-- Step 1: Rating -->
+        <div id="step-rating" class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">{{.ShopName}}</h1>
+            <p class="text-gray-500 mb-6">How was your experience?</p>
+            <div class="flex justify-center gap-3 mb-6" id="stars">
+                <span class="star inactive text-5xl" data-rating="1" onclick="setRating(1)">★</span>
+                <span class="star inactive text-5xl" data-rating="2" onclick="setRating(2)">★</span>
+                <span class="star inactive text-5xl" data-rating="3" onclick="setRating(3)">★</span>
+                <span class="star inactive text-5xl" data-rating="4" onclick="setRating(4)">★</span>
+                <span class="star inactive text-5xl" data-rating="5" onclick="setRating(5)">★</span>
+            </div>
+            <p id="rating-label" class="text-sm text-gray-400 mb-4"></p>
+            <button id="btn-submit-rating" onclick="submitRating()" disabled
+                class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-700 transition">
+                Continue
+            </button>
+        </div>
+
+        <!-- Step 2: Loading -->
+        <div id="step-loading" class="text-center hidden">
+            <div class="flex justify-center mb-4"><div class="spinner"></div></div>
+            <p class="text-gray-500">Generating review suggestions...</p>
+        </div>
+
+        <!-- Step 3: Positive Review (rating >= 4) -->
+        <div id="step-positive" class="hidden fade-in">
+            <h2 class="text-xl font-bold text-gray-800 mb-1">Great to hear! 🎉</h2>
+            <p class="text-gray-500 mb-4 text-sm">Here's a review ready for you. Copy it and paste on Google!</p>
+
+            <!-- Single Review - Copy & Paste -->
+            <div class="mb-4 relative">
+                <textarea id="review-text" rows="5" readonly
+                    class="w-full p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-sm text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                <button onclick="copyReview()" id="btn-copy"
+                    class="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition">
+                    Copy
+                </button>
+            </div>
+
+            <button onclick="openGoogleReview()"
+                class="w-full bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2 text-base">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
+                Paste Review on Google
+            </button>
+            <p class="text-xs text-gray-400 text-center mt-2">Tap Copy above, then paste it on the Google Review page</p>
+        </div>
+
+        <!-- Step 4: Negative Feedback (rating < 4) -->
+        <div id="step-negative" class="hidden fade-in">
+            <h2 class="text-xl font-bold text-gray-800 mb-1">We appreciate your honesty</h2>
+            <p class="text-gray-500 mb-4 text-sm">Your feedback helps us improve. Please share what we can do better:</p>
+            <textarea id="feedback-message" rows="4" placeholder="Tell us about your experience..."
+                class="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"></textarea>
+            <button onclick="submitFeedback()"
+                class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
+                Submit Feedback
+            </button>
+        </div>
+
+        <!-- Step 5: Thank You -->
+        <div id="step-thankyou" class="hidden fade-in text-center">
+            <div class="text-5xl mb-4">🙏</div>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Thank You!</h2>
+            <p class="text-gray-500">Your feedback has been recorded. We appreciate you taking the time to help us improve.</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration injected from server
+        const CONFIG = {
+            shopName: "{{.ShopName}}",
+            shopID: "{{.ShopID}}",
+            reviewURL: "{{.ReviewURL}}",
+            qrCodeID: "{{.QRCodeID}}",
+            apiBase: "{{.APIBaseURL}}"
+        };
+
+        let selectedRating = 0;
+
+        const ratingLabels = {
+            1: "Very Poor", 2: "Poor", 3: "Average", 4: "Good", 5: "Excellent"
+        };
+
+        // Set the star rating when user clicks
+        function setRating(rating) {
+            selectedRating = rating;
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, idx) => {
+                star.classList.toggle('active', idx < rating);
+                star.classList.toggle('inactive', idx >= rating);
+            });
+            document.getElementById('rating-label').textContent = ratingLabels[rating];
+            document.getElementById('btn-submit-rating').disabled = false;
+        }
+
+        // Handle rating submission — routes to positive or negative flow
+        function submitRating() {
+            document.getElementById('step-rating').classList.add('hidden');
+
+            if (selectedRating >= 4) {
+                // Positive: show loading, fetch AI suggestions
+                document.getElementById('step-loading').classList.remove('hidden');
+                fetchSuggestions();
+            } else {
+                // Negative: show feedback form
+                document.getElementById('step-negative').classList.remove('hidden');
+            }
+        }
+
+        // Fetch AI review suggestions from the backend
+        async function fetchSuggestions() {
+            try {
+                const resp = await fetch(CONFIG.apiBase + '/api/v1/qr-reviews/ai/review-suggestions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        business_type: "business",
+                        city: "your city",
+                        rating: selectedRating
+                    })
+                });
+
+                const data = await resp.json();
+                document.getElementById('step-loading').classList.add('hidden');
+
+                if (data.success && data.data) {
+                    renderSuggestions(data.data);
+                    document.getElementById('step-positive').classList.remove('hidden');
+                } else {
+                    // Fallback: show the review button directly
+                    document.getElementById('step-positive').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Failed to fetch suggestions:', err);
+                document.getElementById('step-loading').classList.add('hidden');
+                document.getElementById('step-positive').classList.remove('hidden');
+            }
+        }
+
+        // Render the AI-generated review into the textarea
+        function renderSuggestions(data) {
+            if (data.review) {
+                document.getElementById('review-text').value = data.review;
+            }
+        }
+
+        // Copy review text to clipboard
+        function copyReview() {
+            const textarea = document.getElementById('review-text');
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = document.getElementById('btn-copy');
+                btn.textContent = 'Copied!';
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-blue-600');
+                }, 2000);
+            });
+        }
+
+        // Open Google Review URL and store positive feedback
+        function openGoogleReview() {
+            // Open Google Review FIRST (must be synchronous in click handler
+            // or browser will block the popup)
+            window.location.href = CONFIG.reviewURL;
+
+            // Store positive feedback in background (fire-and-forget)
+            navigator.sendBeacon(
+                CONFIG.apiBase + '/api/v1/qr-reviews/feedback',
+                new Blob([JSON.stringify({
+                    shop_id: CONFIG.shopID,
+                    qr_code_id: CONFIG.qrCodeID,
+                    rating: selectedRating,
+                    message: "Redirected to Google Review"
+                })], { type: 'application/json' })
+            );
+        }
+
+        // Submit negative feedback
+        async function submitFeedback() {
+            const message = document.getElementById('feedback-message').value.trim();
+
+            try {
+                await fetch(CONFIG.apiBase + '/api/v1/qr-reviews/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shop_id: CONFIG.shopID,
+                        qr_code_id: CONFIG.qrCodeID,
+                        rating: selectedRating,
+                        message: message
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to submit feedback:', err);
+            }
+
+            // Show thank you regardless
+            document.getElementById('step-negative').classList.add('hidden');
+            document.getElementById('step-thankyou').classList.remove('hidden');
+        }
+    </script>
+    {{end}}
+</body>
+</html>

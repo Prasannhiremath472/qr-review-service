@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: growthos
+      POSTGRES_PASSWORD: growthos_secret
+      POSTGRES_DB: growthos_qr_reviews
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U growthos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # QR Review Service
+  qr-review-service:
+    build: .
+    ports:
+      - "8098:8098"
+    environment:
+      PORT: "8098"
+      DATABASE_URL: postgres://growthos:growthos_secret@postgres:5432/growthos_qr_reviews?sslmode=disable
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gemini-2.5-flash}
+      QR_BASE_URL: ${QR_BASE_URL:-http://localhost:8098}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
