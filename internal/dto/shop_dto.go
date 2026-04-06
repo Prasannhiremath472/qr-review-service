@@ -4,6 +4,8 @@ package dto
 type CreateShopRequest struct {
 	Name           string `json:"name" binding:"required"`
 	OwnerName      string `json:"owner_name"`
+	BusinessType   string `json:"business_type"`
+	City           string `json:"city"`
 	ReviewURL      string `json:"review_url" binding:"required,url"`
 	OrganizationID string `json:"organization_id"`
 }
@@ -13,6 +15,8 @@ type ShopResponse struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
 	OwnerName      string `json:"owner_name"`
+	BusinessType   string `json:"business_type"`
+	City           string `json:"city"`
 	ReviewURL      string `json:"review_url"`
 	OrganizationID string `json:"organization_id,omitempty"`
 	CreatedAt      string `json:"created_at"`

@@ -63,11 +63,18 @@ func (ctrl *RedirectController) Redirect(c *gin.Context) {
 	}
 
 	// Serve the review page with shop data injected
+	businessType := shop.BusinessType
+	if businessType == "" {
+		businessType = "business"
+	}
+
 	c.HTML(http.StatusOK, "review.html", gin.H{
-		"ShopName":   shop.Name,
-		"ShopID":     shop.ID.String(),
-		"ReviewURL":  shop.ReviewURL,
-		"QRCodeID":   qrCode.ID,
-		"APIBaseURL": "", // Same origin, no prefix needed
+		"ShopName":     shop.Name,
+		"ShopID":       shop.ID.String(),
+		"BusinessType": businessType,
+		"City":         shop.City,
+		"ReviewURL":    shop.ReviewURL,
+		"QRCodeID":     qrCode.ID,
+		"APIBaseURL":   "", // Same origin, no prefix needed
 	})
 }

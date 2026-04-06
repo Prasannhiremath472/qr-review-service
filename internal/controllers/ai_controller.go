@@ -38,7 +38,7 @@ func (ctrl *AIController) GetSuggestions(c *gin.Context) {
 		return
 	}
 
-	suggestions, err := ctrl.service.GenerateSuggestions(req.BusinessType, req.City, req.Rating)
+	suggestions, err := ctrl.service.GenerateSuggestions(req.BusinessName, req.BusinessType, req.City, req.Rating)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

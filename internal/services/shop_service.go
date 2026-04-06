@@ -21,11 +21,18 @@ func NewShopService(repo repositories.ShopRepository) *ShopService {
 
 // CreateShop creates a new shop from the request payload.
 func (s *ShopService) CreateShop(req dto.CreateShopRequest) (*models.Shop, error) {
+	businessType := req.BusinessType
+	if businessType == "" {
+		businessType = "business"
+	}
+
 	shop := &models.Shop{
-		ID:        uuid.New(),
-		Name:      req.Name,
-		OwnerName: req.OwnerName,
-		ReviewURL: req.ReviewURL,
+		ID:           uuid.New(),
+		Name:         req.Name,
+		OwnerName:    req.OwnerName,
+		BusinessType: businessType,
+		City:         req.City,
+		ReviewURL:    req.ReviewURL,
 	}
 
 	// Parse optional organization ID for multi-tenant support

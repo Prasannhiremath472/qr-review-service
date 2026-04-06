@@ -133,7 +133,7 @@
                         </div>
                     </div>
 
-                    <!-- Copy Review & Continue Button -->
+                    <!-- Action Buttons -->
                     <div id="review-actions" class="hidden slide-up">
                         <button onclick="copyAndContinue()" id="btn-continue"
                             class="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 shadow-lg">
@@ -181,6 +181,8 @@
         const CONFIG = {
             shopName: "{{.ShopName}}",
             shopID: "{{.ShopID}}",
+            businessType: "{{.BusinessType}}",
+            city: "{{.City}}",
             reviewURL: "{{.ReviewURL}}",
             qrCodeID: "{{.QRCodeID}}",
             apiBase: "{{.APIBaseURL}}"
@@ -234,8 +236,9 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        business_type: "business",
-                        city: "your city",
+                        business_name: CONFIG.shopName,
+                        business_type: CONFIG.businessType || "business",
+                        city: CONFIG.city || "your city",
                         rating: selectedRating
                     })
                 });

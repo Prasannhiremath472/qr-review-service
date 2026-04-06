@@ -2,6 +2,7 @@ package dto
 
 // AISuggestionRequest is the input for generating a review.
 type AISuggestionRequest struct {
+	BusinessName string `json:"business_name"`
 	BusinessType string `json:"business_type" binding:"required"`
 	City         string `json:"city" binding:"required"`
 	Rating       int    `json:"rating" binding:"required,min=1,max=5"`
