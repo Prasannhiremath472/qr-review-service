@@ -5,11 +5,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/growthOS/qr-review-service/internal/dto"
 	"github.com/growthOS/qr-review-service/internal/repositories"
 	"github.com/growthOS/qr-review-service/internal/services"
 	"github.com/growthOS/qr-review-service/pkg/qrgen"
-	"github.com/google/uuid"
 )
 
 // QRCodeController handles HTTP requests for QR code operations.
@@ -49,6 +49,66 @@ func (ctrl *QRCodeController) Create(c *gin.Context) {
 		"success": true,
 		"data":    qrResp,
 		"message": "QR code created successfully",
+	})
+}
+
+// BulkCreate handles POST /api/v1/qr-reviews/qr/bulk — pre-generates unlinked QR codes.
+func (ctrl *QRCodeController) BulkCreate(c *gin.Context) {
+	var req dto.BulkCreateQRCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	results, err := ctrl.service.BulkCreateQRCodes(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"data":    results,
+		"message": fmt.Sprintf("%d QR codes created successfully", len(results)),
+	})
+}
+
+// Activate handles POST /api/v1/qr-reviews/qr/:id/activate — links a QR code to a business.
+func (ctrl *QRCodeController) Activate(c *gin.Context) {
+	qrID := c.Param("id")
+
+	var req dto.ActivateQRCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request: " + err.Error(),
+		})
+		return
+	}
+
+	shop, err := ctrl.service.ActivateQRCode(qrID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "QR code activated successfully",
+		"data": gin.H{
+			"qr_id":   qrID,
+			"shop_id":  shop.ID.String(),
+			"shop_name": shop.Name,
+		},
 	})
 }
 
@@ -111,7 +171,6 @@ func (ctrl *QRCodeController) Dashboard(c *gin.Context) {
 		return
 	}
 
-	// Build QR data for template
 	type qrData struct {
 		ID        string
 		Label     string

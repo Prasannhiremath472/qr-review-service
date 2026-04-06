@@ -25,6 +25,8 @@ func SetupRoutes(
 
 		// QR code endpoints
 		api.POST("/qr", qrCtrl.Create)
+		api.POST("/qr/bulk", qrCtrl.BulkCreate)
+		api.POST("/qr/:id/activate", qrCtrl.Activate)
 		api.GET("/qr/:id", qrCtrl.GetByID)
 
 		// Feedback endpoint

@@ -9,8 +9,6 @@ import (
 )
 
 // RedirectController handles the QR code scan redirect flow.
-// When a QR code is scanned, it serves the review page instead of redirecting directly,
-// so the customer can rate their experience first.
 type RedirectController struct {
 	qrRepo   repositories.QRCodeRepository
 	shopRepo repositories.ShopRepository
@@ -25,11 +23,11 @@ func NewRedirectController(qrRepo repositories.QRCodeRepository, shopRepo reposi
 }
 
 // Redirect handles GET /r/:qr_id — the core QR scan endpoint.
-// It increments the scan count, looks up the shop, and serves the review page.
+// If the QR is linked to a shop → shows the review page.
+// If the QR is unlinked → shows the setup/activation page for the salesman.
 func (ctrl *RedirectController) Redirect(c *gin.Context) {
 	qrID := c.Param("qr_id")
 
-	// Look up the QR code
 	qrCode, err := ctrl.qrRepo.FindByID(qrID)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "review.html", gin.H{
@@ -38,7 +36,6 @@ func (ctrl *RedirectController) Redirect(c *gin.Context) {
 		return
 	}
 
-	// Check if QR code is active
 	if !qrCode.IsActive {
 		c.HTML(http.StatusGone, "review.html", gin.H{
 			"Error": "This QR code has been deactivated.",
@@ -46,15 +43,23 @@ func (ctrl *RedirectController) Redirect(c *gin.Context) {
 		return
 	}
 
-	// Increment scan count asynchronously (fire-and-forget)
+	// Increment scan count asynchronously
 	go func() {
 		if err := ctrl.qrRepo.IncrementScanCount(qrID); err != nil {
 			log.Error().Err(err).Str("qr_id", qrID).Msg("failed to increment scan count")
 		}
 	}()
 
+	// If QR code is not linked to a shop, show the setup page
+	if !qrCode.IsLinked() {
+		c.HTML(http.StatusOK, "setup.html", gin.H{
+			"QRCodeID": qrCode.ID,
+		})
+		return
+	}
+
 	// Look up the associated shop
-	shop, err := ctrl.shopRepo.FindByID(qrCode.ShopID)
+	shop, err := ctrl.shopRepo.FindByID(*qrCode.ShopID)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "review.html", gin.H{
 			"Error": "Shop not found. Please contact the business owner.",
@@ -62,7 +67,6 @@ func (ctrl *RedirectController) Redirect(c *gin.Context) {
 		return
 	}
 
-	// Serve the review page with shop data injected
 	businessType := shop.BusinessType
 	if businessType == "" {
 		businessType = "business"
@@ -75,6 +79,6 @@ func (ctrl *RedirectController) Redirect(c *gin.Context) {
 		"City":         shop.City,
 		"ReviewURL":    shop.ReviewURL,
 		"QRCodeID":     qrCode.ID,
-		"APIBaseURL":   "", // Same origin, no prefix needed
+		"APIBaseURL":   "",
 	})
 }

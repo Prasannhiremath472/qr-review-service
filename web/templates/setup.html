@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate QR Code</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-gradient {
+            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(109, 40, 217, 0.35); }
+        .btn-gradient:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-purple-50 via-white to-purple-50 min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="max-w-md w-full">
+        <!-- Setup Form -->
+        <div id="step-setup" class="bg-white rounded-3xl shadow-xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-5 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold">Activate QR Code</h1>
+                        <p class="text-white/70 text-xs">QR ID: {{.QRCodeID}}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-5 space-y-4">
+                <p class="text-sm text-gray-500">Connect this QR code to a business. Customers scanning it will be able to leave Google Reviews.</p>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+                    <input id="business-name" type="text" placeholder="e.g. Sambha Bhel"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Business Type</label>
+                    <select id="business-type"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-white">
+                        <option value="restaurant">Restaurant / Food</option>
+                        <option value="salon">Salon / Spa</option>
+                        <option value="hotel">Hotel / Stay</option>
+                        <option value="clinic">Clinic / Hospital</option>
+                        <option value="shop">Retail Shop</option>
+                        <option value="gym">Gym / Fitness</option>
+                        <option value="service">Service Provider</option>
+                        <option value="business" selected>Other Business</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input id="city" type="text" placeholder="e.g. Sangli"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Google Review URL *</label>
+                    <input id="review-url" type="url" placeholder="https://g.page/r/XXXXX/review"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent" required>
+                    <p class="text-xs text-gray-400 mt-1">Search your business on Google Maps → Share → Copy link, or use the "Write a review" URL</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Owner Name</label>
+                    <input id="owner-name" type="text" placeholder="Contact person name"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent">
+                </div>
+
+                <div id="error-msg" class="hidden text-red-500 text-sm bg-red-50 px-4 py-2 rounded-xl"></div>
+
+                <button onclick="activateQR()" id="btn-activate"
+                    class="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 shadow-lg mt-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Activate QR Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div id="step-success" class="hidden bg-white rounded-3xl shadow-xl overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-5 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold">QR Code Activated!</h1>
+                        <p class="text-white/70 text-xs">Successfully connected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-6 text-center">
+                <p class="text-gray-700 font-medium mb-1" id="success-shop-name"></p>
+                <p class="text-gray-500 text-sm mb-4">This QR code is now live. Customers scanning it will see the review page.</p>
+                <button onclick="testQR()"
+                    class="btn-gradient w-full text-white py-3 rounded-xl font-semibold text-sm">
+                    Test QR Code
+                </button>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-400 mt-4">Powered by GrowthOS</p>
+    </div>
+
+    <script>
+        const QR_ID = "{{.QRCodeID}}";
+
+        async function activateQR() {
+            const name = document.getElementById('business-name').value.trim();
+            const reviewURL = document.getElementById('review-url').value.trim();
+            const businessType = document.getElementById('business-type').value;
+            const city = document.getElementById('city').value.trim();
+            const ownerName = document.getElementById('owner-name').value.trim();
+            const errorDiv = document.getElementById('error-msg');
+            const btn = document.getElementById('btn-activate');
+
+            errorDiv.classList.add('hidden');
+
+            if (!name) {
+                errorDiv.textContent = 'Business name is required';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            if (!reviewURL) {
+                errorDiv.textContent = 'Google Review URL is required';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Activating...';
+
+            try {
+                const resp = await fetch('/api/v1/qr-reviews/qr/' + QR_ID + '/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        business_name: name,
+                        business_type: businessType,
+                        city: city,
+                        review_url: reviewURL,
+                        owner_name: ownerName
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (data.success) {
+                    document.getElementById('step-setup').classList.add('hidden');
+                    document.getElementById('success-shop-name').textContent = name;
+                    document.getElementById('step-success').classList.remove('hidden');
+                } else {
+                    errorDiv.textContent = data.message || 'Activation failed';
+                    errorDiv.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Activate QR Code';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Activate QR Code';
+            }
+        }
+
+        function testQR() {
+            window.location.href = '/r/' + QR_ID;
+        }
+    </script>
+</body>
+</html>

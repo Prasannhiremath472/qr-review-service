@@ -45,6 +45,14 @@ func (r *qrCodeRepository) FindByShopID(shopID uuid.UUID) ([]models.QRCode, erro
 	return qrCodes, nil
 }
 
+func (r *qrCodeRepository) FindUnlinked(limit int) ([]models.QRCode, error) {
+	var qrCodes []models.QRCode
+	if err := r.db.Where("shop_id IS NULL").Order("created_at DESC").Limit(limit).Find(&qrCodes).Error; err != nil {
+		return nil, err
+	}
+	return qrCodes, nil
+}
+
 // IncrementScanCount atomically increments the scan_count for a QR code.
 func (r *qrCodeRepository) IncrementScanCount(id string) error {
 	return r.db.Model(&models.QRCode{}).Where("id = ?", id).
