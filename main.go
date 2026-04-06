@@ -1,0 +1,72 @@
+package main
+
+import (
+	"fmt"
+	"html/template"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/growthOS/qr-review-service/internal/config"
+	"github.com/growthOS/qr-review-service/internal/controllers"
+	"github.com/growthOS/qr-review-service/internal/middleware"
+	"github.com/growthOS/qr-review-service/internal/models"
+	"github.com/growthOS/qr-review-service/internal/repositories"
+	"github.com/growthOS/qr-review-service/internal/routes"
+	"github.com/growthOS/qr-review-service/internal/services"
+	"github.com/growthOS/qr-review-service/web"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+func main() {
+	godotenv.Load(".env")
+	cfg := config.LoadConfig()
+
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	if cfg.LogLevel == "debug" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to connect to database")
+	}
+	log.Info().Msg("connected to database")
+
+	if err := db.AutoMigrate(&models.Shop{}, &models.QRCode{}, &models.Feedback{}); err != nil {
+		log.Fatal().Err(err).Msg("failed to migrate database")
+	}
+
+	shopRepo := repositories.NewShopRepository(db)
+	qrRepo := repositories.NewQRCodeRepository(db)
+	feedbackRepo := repositories.NewFeedbackRepository(db)
+
+	variationEngine := services.NewVariationEngine()
+	aiService := services.NewAISuggestionService(cfg.GeminiKey, cfg.GeminiModel, variationEngine)
+	shopService := services.NewShopService(shopRepo)
+	qrService := services.NewQRCodeService(qrRepo, shopRepo, cfg.BaseURL)
+	feedbackService := services.NewFeedbackService(feedbackRepo)
+
+	shopCtrl := controllers.NewShopController(shopService)
+	qrCtrl := controllers.NewQRCodeController(qrService, qrRepo, shopRepo, cfg.BaseURL)
+	feedbackCtrl := controllers.NewFeedbackController(feedbackService)
+	redirectCtrl := controllers.NewRedirectController(qrRepo, shopRepo)
+	aiCtrl := controllers.NewAIController(aiService)
+
+	router := gin.Default()
+
+	tmpl := template.Must(template.ParseFS(web.TemplateFS, "templates/*.html"))
+	router.SetHTMLTemplate(tmpl)
+
+	router.Use(middleware.RequestLogger())
+
+	routes.SetupRoutes(router, shopCtrl, qrCtrl, feedbackCtrl, redirectCtrl, aiCtrl)
+
+	addr := fmt.Sprintf(":%s", cfg.Port)
+	log.Info().Str("port", cfg.Port).Msg("QR Review Service starting")
+	if err := router.Run(addr); err != nil {
+		log.Fatal().Err(err).Msg("failed to start QR Review Service")
+	}
+}
