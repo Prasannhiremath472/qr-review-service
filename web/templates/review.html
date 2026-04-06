@@ -3,98 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rate Your Experience - {{.ShopName}}</title>
+    <title>Review - {{.ShopName}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <style>
+        body { font-family: 'Inter', sans-serif; }
         .star { cursor: pointer; transition: transform 0.2s, color 0.2s; }
-        .star:hover { transform: scale(1.2); }
-        .star.active { color: #facc15; }
+        .star:hover { transform: scale(1.15); }
+        .star.active { color: #f59e0b; }
         .star.inactive { color: #d1d5db; }
-        .fade-in { animation: fadeIn 0.4s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 32px; height: 32px; animation: spin 0.8s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .slide-up { animation: slideUp 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .shimmer {
+            background: linear-gradient(90deg, #f3f0ff 25%, #e9e4fc 50%, #f3f0ff 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .btn-gradient {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 50%, #4c1d95 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(109, 40, 217, 0.35);
+        }
+        .btn-gradient:active { transform: translateY(0); }
+        .review-card {
+            background: linear-gradient(145deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 1.5px solid #e9d5ff;
+        }
+        .pulse-dot {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-b from-purple-50 via-white to-purple-50 min-h-screen flex items-center justify-center p-4">
     {{if .Error}}
-    <!-- Error State -->
     <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-        <div class="text-red-500 text-5xl mb-4">⚠</div>
+        <div class="text-red-500 text-5xl mb-4">&#9888;</div>
         <h1 class="text-xl font-semibold text-gray-800 mb-2">Oops!</h1>
         <p class="text-gray-600">{{.Error}}</p>
     </div>
     {{else}}
-    <div id="app" class="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full">
-        <!-- Step 1: Rating -->
-        <div id="step-rating" class="text-center">
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">{{.ShopName}}</h1>
-            <p class="text-gray-500 mb-6">How was your experience?</p>
-            <div class="flex justify-center gap-3 mb-6" id="stars">
-                <span class="star inactive text-5xl" data-rating="1" onclick="setRating(1)">★</span>
-                <span class="star inactive text-5xl" data-rating="2" onclick="setRating(2)">★</span>
-                <span class="star inactive text-5xl" data-rating="3" onclick="setRating(3)">★</span>
-                <span class="star inactive text-5xl" data-rating="4" onclick="setRating(4)">★</span>
-                <span class="star inactive text-5xl" data-rating="5" onclick="setRating(5)">★</span>
-            </div>
-            <p id="rating-label" class="text-sm text-gray-400 mb-4"></p>
-            <button id="btn-submit-rating" onclick="submitRating()" disabled
-                class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-700 transition">
-                Continue
-            </button>
-        </div>
-
-        <!-- Step 2: Loading -->
-        <div id="step-loading" class="text-center hidden">
-            <div class="flex justify-center mb-4"><div class="spinner"></div></div>
-            <p class="text-gray-500">Generating review suggestions...</p>
-        </div>
-
-        <!-- Step 3: Positive Review (rating >= 4) -->
-        <div id="step-positive" class="hidden fade-in">
-            <h2 class="text-xl font-bold text-gray-800 mb-1">Great to hear! 🎉</h2>
-            <p class="text-gray-500 mb-4 text-sm">Here's a review ready for you. Copy it and paste on Google!</p>
-
-            <!-- Single Review - Copy & Paste -->
-            <div class="mb-4 relative">
-                <textarea id="review-text" rows="5" readonly
-                    class="w-full p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-sm text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-                <button onclick="copyReview()" id="btn-copy"
-                    class="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 transition">
-                    Copy
-                </button>
+    <div id="app" class="max-w-md w-full">
+        <!-- Main Review Card -->
+        <div id="step-review" class="bg-white rounded-3xl shadow-xl overflow-hidden fade-in">
+            <!-- Header with Business Info -->
+            <div class="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-5 text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-2xl font-bold">
+                        {{slice .ShopName 0 1}}
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold leading-tight">{{.ShopName}}</h1>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            <span class="text-yellow-300 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                            <span class="text-white/70 text-xs ml-1">Google Reviews</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <button onclick="openGoogleReview()"
-                class="w-full bg-green-600 text-white py-3.5 rounded-xl font-semibold hover:bg-green-700 transition flex items-center justify-center gap-2 text-base">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
-                Paste Review on Google
-            </button>
-            <p class="text-xs text-gray-400 text-center mt-2">Tap Copy above, then paste it on the Google Review page</p>
+            <div class="px-6 py-5">
+                <!-- Star Rating -->
+                <div class="text-center mb-5">
+                    <p class="text-gray-500 text-sm mb-3">Rate your experience</p>
+                    <div class="flex justify-center gap-2" id="stars">
+                        <span class="star active text-4xl" data-rating="1" onclick="setRating(1)">&#9733;</span>
+                        <span class="star active text-4xl" data-rating="2" onclick="setRating(2)">&#9733;</span>
+                        <span class="star active text-4xl" data-rating="3" onclick="setRating(3)">&#9733;</span>
+                        <span class="star active text-4xl" data-rating="4" onclick="setRating(4)">&#9733;</span>
+                        <span class="star active text-4xl" data-rating="5" onclick="setRating(5)">&#9733;</span>
+                    </div>
+                    <p id="rating-label" class="text-xs text-purple-600 font-medium mt-1.5">Excellent</p>
+                </div>
+
+                <!-- AI Review Section (visible for rating >= 4) -->
+                <div id="review-section">
+                    <!-- Loading State -->
+                    <div id="review-loading" class="mb-4">
+                        <div class="review-card rounded-2xl p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex gap-1">
+                                    <span class="pulse-dot w-2 h-2 bg-purple-500 rounded-full inline-block"></span>
+                                    <span class="pulse-dot w-2 h-2 bg-purple-400 rounded-full inline-block" style="animation-delay:0.3s"></span>
+                                    <span class="pulse-dot w-2 h-2 bg-purple-300 rounded-full inline-block" style="animation-delay:0.6s"></span>
+                                </div>
+                                <span class="text-sm text-purple-600 font-medium">Generating your review...</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="shimmer h-4 rounded-full w-full"></div>
+                                <div class="shimmer h-4 rounded-full w-11/12"></div>
+                                <div class="shimmer h-4 rounded-full w-4/5"></div>
+                                <div class="shimmer h-4 rounded-full w-9/12"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generated Review -->
+                    <div id="review-content" class="hidden slide-up mb-4">
+                        <div class="review-card rounded-2xl p-4 relative">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-purple-700 uppercase tracking-wide">Your Review</span>
+                                <button onclick="copyReview()" id="btn-copy"
+                                    class="flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800 transition px-2 py-1 rounded-lg hover:bg-purple-100">
+                                    <svg id="copy-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span id="copy-label">Copy</span>
+                                </button>
+                            </div>
+                            <textarea id="review-text" rows="5" readonly
+                                class="w-full bg-transparent text-sm text-gray-700 leading-relaxed resize-none border-0 focus:ring-0 p-0"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Copy Review & Continue Button -->
+                    <div id="review-actions" class="hidden slide-up">
+                        <button onclick="copyAndContinue()" id="btn-continue"
+                            class="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy Review &amp; Continue
+                        </button>
+                        <p class="text-xs text-gray-400 text-center mt-2.5">Review will be copied. Paste it on Google Reviews page.</p>
+                    </div>
+                </div>
+
+                <!-- Negative Feedback Section (rating < 4) -->
+                <div id="step-negative" class="hidden fade-in">
+                    <div class="review-card rounded-2xl p-4 mb-4">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">We value your feedback</p>
+                        <p class="text-xs text-gray-500 mb-3">Tell us how we can improve your experience</p>
+                        <textarea id="feedback-message" rows="4" placeholder="Share your thoughts..."
+                            class="w-full p-3 bg-white border border-purple-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-purple-400 focus:border-transparent placeholder-gray-400 resize-none"></textarea>
+                    </div>
+                    <button onclick="submitFeedback()"
+                        class="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-base shadow-lg">
+                        Submit Feedback
+                    </button>
+                </div>
+
+                <!-- Thank You State -->
+                <div id="step-thankyou" class="hidden fade-in text-center py-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Thank You!</h2>
+                    <p class="text-gray-500 text-sm">Your feedback means a lot to us.</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Step 4: Negative Feedback (rating < 4) -->
-        <div id="step-negative" class="hidden fade-in">
-            <h2 class="text-xl font-bold text-gray-800 mb-1">We appreciate your honesty</h2>
-            <p class="text-gray-500 mb-4 text-sm">Your feedback helps us improve. Please share what we can do better:</p>
-            <textarea id="feedback-message" rows="4" placeholder="Tell us about your experience..."
-                class="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"></textarea>
-            <button onclick="submitFeedback()"
-                class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
-                Submit Feedback
-            </button>
-        </div>
-
-        <!-- Step 5: Thank You -->
-        <div id="step-thankyou" class="hidden fade-in text-center">
-            <div class="text-5xl mb-4">🙏</div>
-            <h2 class="text-xl font-bold text-gray-800 mb-2">Thank You!</h2>
-            <p class="text-gray-500">Your feedback has been recorded. We appreciate you taking the time to help us improve.</p>
-        </div>
+        <!-- Powered By Footer -->
+        <p class="text-center text-xs text-gray-400 mt-4">Powered by GrowthOS</p>
     </div>
 
     <script>
-        // Configuration injected from server
         const CONFIG = {
             shopName: "{{.ShopName}}",
             shopID: "{{.ShopID}}",
@@ -103,13 +186,17 @@
             apiBase: "{{.APIBaseURL}}"
         };
 
-        let selectedRating = 0;
+        let selectedRating = 5; // Pre-filled at 5 stars
 
         const ratingLabels = {
             1: "Very Poor", 2: "Poor", 3: "Average", 4: "Good", 5: "Excellent"
         };
 
-        // Set the star rating when user clicks
+        // Auto-fetch AI review on page load (5 stars pre-selected)
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchSuggestions();
+        });
+
         function setRating(rating) {
             selectedRating = rating;
             const stars = document.querySelectorAll('.star');
@@ -118,25 +205,30 @@
                 star.classList.toggle('inactive', idx >= rating);
             });
             document.getElementById('rating-label').textContent = ratingLabels[rating];
-            document.getElementById('btn-submit-rating').disabled = false;
-        }
 
-        // Handle rating submission — routes to positive or negative flow
-        function submitRating() {
-            document.getElementById('step-rating').classList.add('hidden');
-
-            if (selectedRating >= 4) {
-                // Positive: show loading, fetch AI suggestions
-                document.getElementById('step-loading').classList.remove('hidden');
-                fetchSuggestions();
+            if (rating >= 4) {
+                // Show review section, hide negative feedback
+                document.getElementById('review-section').classList.remove('hidden');
+                document.getElementById('step-negative').classList.add('hidden');
+                document.getElementById('step-thankyou').classList.add('hidden');
+                // Re-fetch if review not loaded yet or rating changed
+                if (document.getElementById('review-content').classList.contains('hidden')) {
+                    fetchSuggestions();
+                }
             } else {
-                // Negative: show feedback form
+                // Show negative feedback form, hide review section
+                document.getElementById('review-section').classList.add('hidden');
                 document.getElementById('step-negative').classList.remove('hidden');
+                document.getElementById('step-thankyou').classList.add('hidden');
             }
         }
 
-        // Fetch AI review suggestions from the backend
         async function fetchSuggestions() {
+            // Show loading
+            document.getElementById('review-loading').classList.remove('hidden');
+            document.getElementById('review-content').classList.add('hidden');
+            document.getElementById('review-actions').classList.add('hidden');
+
             try {
                 const resp = await fetch(CONFIG.apiBase + '/api/v1/qr-reviews/ai/review-suggestions', {
                     method: 'POST',
@@ -149,65 +241,76 @@
                 });
 
                 const data = await resp.json();
-                document.getElementById('step-loading').classList.add('hidden');
 
-                if (data.success && data.data) {
-                    renderSuggestions(data.data);
-                    document.getElementById('step-positive').classList.remove('hidden');
+                if (data.success && data.data && data.data.review) {
+                    document.getElementById('review-text').value = data.data.review;
                 } else {
-                    // Fallback: show the review button directly
-                    document.getElementById('step-positive').classList.remove('hidden');
+                    document.getElementById('review-text').value = "Had a wonderful experience! Great service and would definitely recommend.";
                 }
             } catch (err) {
                 console.error('Failed to fetch suggestions:', err);
-                document.getElementById('step-loading').classList.add('hidden');
-                document.getElementById('step-positive').classList.remove('hidden');
+                document.getElementById('review-text').value = "Had a wonderful experience! Great service and would definitely recommend.";
             }
+
+            // Hide loading, show review
+            document.getElementById('review-loading').classList.add('hidden');
+            document.getElementById('review-content').classList.remove('hidden');
+            document.getElementById('review-actions').classList.remove('hidden');
         }
 
-        // Render the AI-generated review into the textarea
-        function renderSuggestions(data) {
-            if (data.review) {
-                document.getElementById('review-text').value = data.review;
-            }
-        }
-
-        // Copy review text to clipboard
         function copyReview() {
             const textarea = document.getElementById('review-text');
-            textarea.select();
             navigator.clipboard.writeText(textarea.value).then(() => {
-                const btn = document.getElementById('btn-copy');
-                btn.textContent = 'Copied!';
-                btn.classList.remove('bg-blue-600');
-                btn.classList.add('bg-green-600');
+                document.getElementById('copy-label').textContent = 'Copied!';
+                document.getElementById('copy-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
                 setTimeout(() => {
-                    btn.textContent = 'Copy';
-                    btn.classList.remove('bg-green-600');
-                    btn.classList.add('bg-blue-600');
+                    document.getElementById('copy-label').textContent = 'Copy';
+                    document.getElementById('copy-icon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>';
                 }, 2000);
             });
         }
 
-        // Open Google Review URL and store positive feedback
-        function openGoogleReview() {
-            // Open Google Review FIRST (must be synchronous in click handler
-            // or browser will block the popup)
-            window.location.href = CONFIG.reviewURL;
+        function copyAndContinue() {
+            const textarea = document.getElementById('review-text');
+            const btn = document.getElementById('btn-continue');
 
-            // Store positive feedback in background (fire-and-forget)
-            navigator.sendBeacon(
-                CONFIG.apiBase + '/api/v1/qr-reviews/feedback',
-                new Blob([JSON.stringify({
-                    shop_id: CONFIG.shopID,
-                    qr_code_id: CONFIG.qrCodeID,
-                    rating: selectedRating,
-                    message: "Redirected to Google Review"
-                })], { type: 'application/json' })
-            );
+            // Copy to clipboard first
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                // Visual feedback
+                btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Copied! Redirecting...';
+
+                // Store feedback in background
+                navigator.sendBeacon(
+                    CONFIG.apiBase + '/api/v1/qr-reviews/feedback',
+                    new Blob([JSON.stringify({
+                        shop_id: CONFIG.shopID,
+                        qr_code_id: CONFIG.qrCodeID,
+                        rating: selectedRating,
+                        message: "Redirected to Google Review"
+                    })], { type: 'application/json' })
+                );
+
+                // Redirect to Google Review after a brief moment
+                setTimeout(() => {
+                    window.location.href = CONFIG.reviewURL;
+                }, 600);
+            }).catch(() => {
+                // Fallback: try older copy method
+                textarea.select();
+                document.execCommand('copy');
+                navigator.sendBeacon(
+                    CONFIG.apiBase + '/api/v1/qr-reviews/feedback',
+                    new Blob([JSON.stringify({
+                        shop_id: CONFIG.shopID,
+                        qr_code_id: CONFIG.qrCodeID,
+                        rating: selectedRating,
+                        message: "Redirected to Google Review"
+                    })], { type: 'application/json' })
+                );
+                window.location.href = CONFIG.reviewURL;
+            });
         }
 
-        // Submit negative feedback
         async function submitFeedback() {
             const message = document.getElementById('feedback-message').value.trim();
 
@@ -226,8 +329,8 @@
                 console.error('Failed to submit feedback:', err);
             }
 
-            // Show thank you regardless
             document.getElementById('step-negative').classList.add('hidden');
+            document.getElementById('review-section').classList.add('hidden');
             document.getElementById('step-thankyou').classList.remove('hidden');
         }
     </script>
