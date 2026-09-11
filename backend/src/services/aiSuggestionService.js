@@ -30,11 +30,15 @@ const LENGTHS = [
 
 const FALLBACK_TIMEOUT_MS = 60000;
 
-function buildSystemPrompt(businessName, city) {
+function buildSystemPrompt(businessName, city, serviceTaken) {
   const now = Date.now();
   const persona = PERSONAS[Math.floor((now / 1000) % PERSONAS.length)];
   const tone = TONES[Math.floor((now / 1000) % TONES.length)];
   const length = LENGTHS[Math.floor((now / 1000) % LENGTHS.length)];
+
+  const serviceLine = serviceTaken
+    ? `- The customer came in for "${serviceTaken}" — reference this specific service naturally instead of inventing a different detail`
+    : `- Include ONE specific detail (a menu item, a feature, staff interaction, or atmosphere detail) — make it up but keep it realistic for this type of business`;
 
   return `You write Google Reviews as if you are a REAL customer. Each review must be completely unique and different from any review you have ever written.
 
@@ -48,7 +52,7 @@ CRITICAL RULES:
 - NEVER start with "I", "We", "Had", "Great", "Amazing", "Wonderful", or "The". Mix up your sentence starters creatively.
 - NEVER use these banned phrases: "highly recommend", "must visit", "hidden gem", "best in", "look no further", "hands down", "second to none", "top-notch", "exceeded expectations", "above and beyond", "will definitely be back", "can't wait to come back"
 - Use casual everyday language. Real people say "pretty good", "really liked", "solid choice" — not "exceptional" or "outstanding" or "impeccable"
-- Include ONE specific detail (a menu item, a feature, staff interaction, or atmosphere detail) — make it up but keep it realistic for this type of business
+${serviceLine}
 - Mention the business name "${businessName}" naturally (not forced)
 - If city is provided, mention "${city}" naturally only if it fits — don't force it
 - Small imperfections make reviews real: it's okay to mention one minor thing or use informal grammar
@@ -56,13 +60,13 @@ CRITICAL RULES:
 - Vary punctuation: some reviews use periods only, some use a dash or ellipsis naturally`;
 }
 
-function buildUserPrompt(businessName, businessType, city, rating) {
+function buildUserPrompt(businessName, businessType, city, rating, serviceTaken) {
   const seed = Date.now() % 100000;
   return `Business: ${businessName}
 Type: ${businessType}
 City: ${city}
 Rating: ${rating}/5 stars
-Random seed: ${seed}
+${serviceTaken ? `Service taken: ${serviceTaken}\n` : ""}Random seed: ${seed}
 
 Write a unique Google Review that sounds like a real person typed it on their phone. Make it different from any standard review template.`;
 }
@@ -134,13 +138,13 @@ function generateFallback(businessName, businessType, city, rating) {
 }
 
 // generateSuggestions generates a single ready-to-paste Google Review for a business.
-async function generateSuggestions(businessName, businessType, city, rating) {
+async function generateSuggestions(businessName, businessType, city, rating, serviceTaken) {
   if (!config.geminiKey) {
     return generateFallback(businessName, businessType, city, rating);
   }
 
-  const systemPrompt = buildSystemPrompt(businessName, city);
-  const userPrompt = buildUserPrompt(businessName, businessType, city, rating);
+  const systemPrompt = buildSystemPrompt(businessName, city, serviceTaken);
+  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, serviceTaken);
 
   try {
     const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, 300);

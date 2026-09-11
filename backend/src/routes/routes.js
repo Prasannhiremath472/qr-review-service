@@ -6,7 +6,9 @@ const feedbackController = require("../controllers/feedbackController");
 const redirectController = require("../controllers/redirectController");
 const aiController = require("../controllers/aiController");
 const authController = require("../controllers/authController");
+const uploadController = require("../controllers/uploadController");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { upload } = require("../middleware/upload");
 
 function setupRoutes(app) {
   const api = express.Router();
@@ -38,6 +40,15 @@ function setupRoutes(app) {
 
   // Dashboard data endpoint — admin/salesman can view any shop; owner only their own
   api.get("/dashboard/:shop_id", requireAuth, qrCodeController.dashboard);
+
+  // Business photo upload (admin/salesman) — used during QR activation
+  api.post(
+    "/uploads/shop-photo",
+    requireAuth,
+    requireRole("ADMIN", "SALESMAN"),
+    upload.single("photo"),
+    uploadController.uploadPhoto
+  );
 
   app.use("/api/v1/qr-reviews", api);
 

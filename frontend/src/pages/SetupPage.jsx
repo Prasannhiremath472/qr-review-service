@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { activateQrCode } from "../api/client.js";
+import { activateQrCode, uploadShopPhoto } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function SetupPage({ qrId }) {
@@ -58,8 +58,22 @@ function ActivationForm({ qrId }) {
   const [city, setCity] = useState("");
   const [reviewUrl, setReviewUrl] = useState("");
   const [ownerName, setOwnerName] = useState("");
+  const [aboutUs, setAboutUs] = useState("");
+  const [openHours, setOpenHours] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  }
 
   async function handleActivate(e) {
     e.preventDefault();
@@ -75,12 +89,26 @@ function ActivationForm({ qrId }) {
 
     setSubmitting(true);
     try {
+      let photoUrl = "";
+      if (photoFile) {
+        const { data: uploadData } = await uploadShopPhoto(photoFile);
+        if (uploadData.success) {
+          photoUrl = uploadData.data.url;
+        }
+      }
+
       const { data } = await activateQrCode(qrId, {
         business_name: businessName.trim(),
         business_type: businessType,
         city: city.trim(),
         review_url: reviewUrl.trim(),
         owner_name: ownerName.trim(),
+        about_us: aboutUs.trim(),
+        open_hours: openHours.trim(),
+        whatsapp_number: whatsappNumber.trim(),
+        contact_phone: contactPhone.trim(),
+        address: address.trim(),
+        photo_url: photoUrl,
       });
 
       if (data.success) {
@@ -185,6 +213,80 @@ function ActivationForm({ qrId }) {
                   placeholder="Contact person name"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-zinc-100">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+                  Optional — for the customer-facing page
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Photo</label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-violet-100 file:text-violet-700 file:text-sm file:font-medium"
+                />
+                {photoPreview && (
+                  <img src={photoPreview} alt="Preview" className="w-full h-32 object-cover rounded-xl mt-2" />
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">About Us</label>
+                <textarea
+                  rows={3}
+                  placeholder="A short description of the business"
+                  value={aboutUs}
+                  onChange={(e) => setAboutUs(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Open Hours</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Mon-Sat 10am - 9pm"
+                  value={openHours}
+                  onChange={(e) => setOpenHours(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">WhatsApp Number</label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 919876543210"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Contact Phone</label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Address</label>
+                <input
+                  type="text"
+                  placeholder="Full address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                   className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
                 />
               </div>

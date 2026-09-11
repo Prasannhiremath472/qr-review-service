@@ -54,6 +54,13 @@ async function resolve(req, res) {
       city: shop.city,
       review_url: shop.review_url,
       qr_code_id: qrCode.id,
+      photo_url: shop.photo_url || "",
+      about_us: shop.about_us || "",
+      open_hours: shop.open_hours || "",
+      whatsapp_number: shop.whatsapp_number || "",
+      contact_phone: shop.contact_phone || "",
+      address: shop.address || "",
+      owner_name: shop.owner_name || "",
     },
   });
 }

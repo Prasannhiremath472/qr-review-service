@@ -111,9 +111,25 @@ async function activateQRCode(qrId, req) {
 
   const shopId = crypto.randomUUID();
   await db.query(
-    `INSERT INTO shops (id, name, owner_name, business_type, city, review_url, owner_user_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [shopId, req.business_name, req.owner_name || "", businessType, req.city || "", req.review_url, ownerUserId]
+    `INSERT INTO shops
+       (id, name, owner_name, business_type, city, review_url, owner_user_id,
+        photo_url, about_us, open_hours, whatsapp_number, contact_phone, address)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      shopId,
+      req.business_name,
+      req.owner_name || "",
+      businessType,
+      req.city || "",
+      req.review_url,
+      ownerUserId,
+      req.photo_url || null,
+      req.about_us || null,
+      req.open_hours || "",
+      req.whatsapp_number || "",
+      req.contact_phone || "",
+      req.address || "",
+    ]
   );
 
   await db.query("UPDATE qr_codes SET shop_id = ? WHERE id = ?", [shopId, qrId]);

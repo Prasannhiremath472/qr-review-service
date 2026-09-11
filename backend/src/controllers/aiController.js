@@ -22,7 +22,8 @@ async function getSuggestions(req, res) {
       req.body.business_name,
       business_type,
       city,
-      rating
+      rating,
+      req.body.service_taken
     );
     res.status(200).json({ success: true, data: suggestions });
   } catch (err) {

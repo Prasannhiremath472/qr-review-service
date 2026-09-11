@@ -23,6 +23,12 @@ CREATE TABLE IF NOT EXISTS `shops` (
     `review_url` TEXT NOT NULL,
     `organization_id` VARCHAR(36) NULL,
     `owner_user_id` VARCHAR(36) NULL,
+    `photo_url` MEDIUMTEXT NULL,
+    `about_us` TEXT NULL,
+    `open_hours` VARCHAR(500) NOT NULL DEFAULT '',
+    `whatsapp_number` VARCHAR(30) NOT NULL DEFAULT '',
+    `contact_phone` VARCHAR(30) NOT NULL DEFAULT '',
+    `address` VARCHAR(500) NOT NULL DEFAULT '',
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
