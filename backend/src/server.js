@@ -8,7 +8,10 @@ const { setupRoutes } = require("./routes/routes");
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin }));
-app.use(express.json());
+// Raised from Express's 100KB default: activation payloads carry a base64-
+// encoded shop photo (already compressed client-side to ~800px/JPEG q70,
+// but that can still be tens of KB as base64 text plus the rest of the form).
+app.use(express.json({ limit: "2mb" }));
 app.use(requestLogger);
 
 setupRoutes(app);
