@@ -12,7 +12,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed:admin": "node scripts/build-database-url.js && node prisma/seed.js",
-    "prestart": "node scripts/build-database-url.js && prisma migrate deploy"
+    "prestart": "node scripts/build-database-url.js && prisma migrate deploy && node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
