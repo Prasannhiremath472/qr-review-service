@@ -34,22 +34,19 @@ npm run dev
 ### Backend (Node.js app / VPS)
 
 1. Create a MySQL database in hPanel (phpMyAdmin) and note the host, user, password, database name.
-2. Upload the `backend/` folder to your Node.js app (Hostinger's Node.js hosting or a VPS).
-3. Set environment variables (via Hostinger's Node app config or a `.env` file):
-   - `DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DBNAME"`
+2. Point Hostinger's Node.js app at this GitHub repo, with root directory `backend`, package manager `npm`, entry file `src/server.js`.
+3. Set environment variables in Hostinger's Node app panel:
    - `QR_BASE_URL="https://api.yourdomain.com"` (this backend's own public URL — used only for the `/qr-image/:id` PNG endpoint)
    - `FRONTEND_URL="https://yourdomain.com"` (your frontend's public URL — encoded into every QR code and used for scan links, since `/r/:qrId` is a page on the frontend, not the backend)
    - `CORS_ORIGIN="https://yourdomain.com"` (your frontend's public URL, for CORS)
    - `JWT_SECRET` (a long random string — required; generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
    - `GEMINI_API_KEY` (optional — falls back to canned reviews if omitted)
    - `PORT` (Hostinger usually sets this automatically)
-4. Install dependencies, run migrations, and seed the first admin on the server:
-   ```bash
-   npm install
-   npx prisma migrate deploy
-   SEED_ADMIN_EMAIL=admin@yourdomain.com SEED_ADMIN_PASSWORD=your-strong-password npm run seed:admin
-   npm start
-   ```
+   - **Database**: if Hostinger's panel lets you add a custom `DATABASE_URL`, set it directly (`mysql://USER:PASSWORD@HOST:3306/DBNAME`). If it only exposes separate `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_NAME` fields (no custom vars allowed), leave `DATABASE_URL` unset — `scripts/build-database-url.js` composes it automatically from those three on every install/start (assumes host `localhost`; set `DATABASE_HOST` too if that's ever different).
+4. Deploying runs `npm install` then `npm start` automatically. Both already trigger everything needed via lifecycle hooks:
+   - `postinstall` → builds `DATABASE_URL` if needed, then `prisma generate`
+   - `prestart` → builds `DATABASE_URL` if needed, then `prisma migrate deploy`
+5. After the first successful deploy, seed the first admin account once (there's no terminal access on most Hostinger Node plans, so temporarily add `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` as environment variables, redeploy, then remove them — `npm run seed:admin` is safe to leave wired up since it skips creation if that email already exists, but the credentials shouldn't stay in the panel long-term).
 
 ### Frontend (static hosting)
 

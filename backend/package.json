@@ -7,12 +7,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/build-database-url.js && prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
-    "seed:admin": "node prisma/seed.js",
-    "prestart": "prisma migrate deploy"
+    "seed:admin": "node scripts/build-database-url.js && node prisma/seed.js",
+    "prestart": "node scripts/build-database-url.js && prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
