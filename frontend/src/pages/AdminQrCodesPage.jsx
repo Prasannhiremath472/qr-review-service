@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { bulkCreateQrCodes, listAllQrCodes } from "../api/client.js";
 import AppLayout from "../components/AppLayout.jsx";
 import Pagination from "../components/Pagination.jsx";
+import QrCodesModal from "../components/QrCodesModal.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -12,6 +12,7 @@ export default function AdminQrCodesPage() {
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 });
+  const [modalShop, setModalShop] = useState(null);
 
   async function refresh(targetPage = page) {
     const { data } = await listAllQrCodes({ page: targetPage, limit: PAGE_SIZE });
@@ -104,9 +105,12 @@ export default function AdminQrCodesPage() {
                     </td>
                     <td className="px-5 py-3 text-zinc-600 hidden sm:table-cell">
                       {qr.is_linked ? (
-                        <Link to={`/dashboard/${qr.shop_id}`} className="text-violet-600 hover:text-violet-800 font-medium">
+                        <button
+                          onClick={() => setModalShop({ id: qr.shop_id, name: qr.shop_name })}
+                          className="text-violet-600 hover:text-violet-800 font-medium hover:underline"
+                        >
                           {qr.shop_name}
-                        </Link>
+                        </button>
                       ) : (
                         <span className="text-zinc-300">—</span>
                       )}
@@ -130,6 +134,10 @@ export default function AdminQrCodesPage() {
         )}
         <Pagination page={page} totalPages={meta.total_pages} onChange={setPage} />
       </div>
+
+      {modalShop && (
+        <QrCodesModal shopId={modalShop.id} shopName={modalShop.name} onClose={() => setModalShop(null)} />
+      )}
     </AppLayout>
   );
 }
