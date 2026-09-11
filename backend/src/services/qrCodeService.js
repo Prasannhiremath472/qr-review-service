@@ -109,12 +109,18 @@ async function activateQRCode(qrId, req) {
     ownerUserId = owner.id;
   }
 
+  const galleryPhotos =
+    Array.isArray(req.gallery_photos) && req.gallery_photos.length > 0
+      ? JSON.stringify(req.gallery_photos.slice(0, 5))
+      : null;
+
   const shopId = crypto.randomUUID();
   await db.query(
     `INSERT INTO shops
        (id, name, owner_name, business_type, city, review_url, owner_user_id,
-        photo_url, about_us, open_hours, whatsapp_number, contact_phone, address)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        photo_url, logo_url, gallery_photos, about_us, open_hours,
+        whatsapp_number, contact_phone, contact_email, address)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       shopId,
       req.business_name,
@@ -124,10 +130,13 @@ async function activateQRCode(qrId, req) {
       req.review_url,
       ownerUserId,
       req.photo_url || null,
+      req.logo_url || null,
+      galleryPhotos,
       req.about_us || null,
       req.open_hours || "",
       req.whatsapp_number || "",
       req.contact_phone || "",
+      req.contact_email || "",
       req.address || "",
     ]
   );

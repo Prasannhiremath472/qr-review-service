@@ -51,6 +51,8 @@ function ActivationLoginPrompt({ qrId, loggedInAsWrongRole }) {
   );
 }
 
+const MAX_GALLERY_PHOTOS = 5;
+
 function ActivationForm({ qrId }) {
   const [activated, setActivated] = useState(false);
   const [businessName, setBusinessName] = useState("");
@@ -62,17 +64,43 @@ function ActivationForm({ qrId }) {
   const [openHours, setOpenHours] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [galleryFiles, setGalleryFiles] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+
+  function handleLogoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  }
 
   function handlePhotoChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
+  }
+
+  function handleGalleryChange(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const combined = [...galleryFiles, ...files].slice(0, MAX_GALLERY_PHOTOS);
+    setGalleryFiles(
+      combined.map((f) => (f.preview ? f : Object.assign(f, { preview: URL.createObjectURL(f) })))
+    );
+    e.target.value = "";
+  }
+
+  function removeGalleryFile(index) {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleActivate(e) {
@@ -89,13 +117,27 @@ function ActivationForm({ qrId }) {
 
     setSubmitting(true);
     try {
+      let logoUrl = "";
+      if (logoFile) {
+        setUploadStatus("Uploading logo...");
+        const { data: uploadData } = await uploadShopPhoto(logoFile, "logo");
+        if (uploadData.success) logoUrl = uploadData.data.url;
+      }
+
       let photoUrl = "";
       if (photoFile) {
+        setUploadStatus("Uploading photo...");
         const { data: uploadData } = await uploadShopPhoto(photoFile);
-        if (uploadData.success) {
-          photoUrl = uploadData.data.url;
-        }
+        if (uploadData.success) photoUrl = uploadData.data.url;
       }
+
+      const galleryUrls = [];
+      for (let i = 0; i < galleryFiles.length; i++) {
+        setUploadStatus(`Uploading gallery photo ${i + 1} of ${galleryFiles.length}...`);
+        const { data: uploadData } = await uploadShopPhoto(galleryFiles[i]);
+        if (uploadData.success) galleryUrls.push(uploadData.data.url);
+      }
+      setUploadStatus("");
 
       const { data } = await activateQrCode(qrId, {
         business_name: businessName.trim(),
@@ -107,8 +149,11 @@ function ActivationForm({ qrId }) {
         open_hours: openHours.trim(),
         whatsapp_number: whatsappNumber.trim(),
         contact_phone: contactPhone.trim(),
+        contact_email: contactEmail.trim(),
         address: address.trim(),
+        logo_url: logoUrl,
         photo_url: photoUrl,
+        gallery_photos: galleryUrls,
       });
 
       if (data.success) {
@@ -224,6 +269,22 @@ function ActivationForm({ qrId }) {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Logo</label>
+                <div className="flex items-center gap-3">
+                  {logoPreview && (
+                    <img src={logoPreview} alt="Logo preview" className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoChange}
+                    className="field-input flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-violet-100 file:text-violet-700 file:text-sm file:font-medium"
+                  />
+                </div>
+                <p className="text-xs text-zinc-400 mt-1.5">Shown as a small icon on the review page header</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Photo</label>
                 <input
                   type="file"
@@ -234,6 +295,39 @@ function ActivationForm({ qrId }) {
                 {photoPreview && (
                   <img src={photoPreview} alt="Preview" className="w-full h-32 object-cover rounded-xl mt-2" />
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                  Gallery Photos ({galleryFiles.length}/{MAX_GALLERY_PHOTOS})
+                </label>
+                {galleryFiles.length < MAX_GALLERY_PHOTOS && (
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleGalleryChange}
+                    className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-violet-100 file:text-violet-700 file:text-sm file:font-medium"
+                  />
+                )}
+                {galleryFiles.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {galleryFiles.map((file, i) => (
+                      <div key={i} className="relative">
+                        <img src={file.preview} alt={`Gallery ${i + 1}`} className="w-full h-20 object-cover rounded-lg" />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryFile(i)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-zinc-800 text-white rounded-full flex items-center justify-center text-xs"
+                          aria-label="Remove"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-zinc-400 mt-1.5">Storefront, interior, products — up to {MAX_GALLERY_PHOTOS} photos</p>
               </div>
 
               <div>
@@ -281,6 +375,17 @@ function ActivationForm({ qrId }) {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Contact Email</label>
+                <input
+                  type="email"
+                  placeholder="e.g. contact@business.com"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Address</label>
                 <input
                   type="text"
@@ -303,7 +408,7 @@ function ActivationForm({ qrId }) {
                 {submitting ? (
                   <>
                     <Spinner />
-                    Activating...
+                    {uploadStatus || "Activating..."}
                   </>
                 ) : (
                   <>

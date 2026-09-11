@@ -97,7 +97,7 @@ export function getMyShops() {
   return request(`/api/v1/qr-reviews/shops/mine`);
 }
 
-export async function uploadShopPhoto(file) {
+export async function uploadShopPhoto(file, type = "photo") {
   const token = getToken();
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -105,7 +105,7 @@ export async function uploadShopPhoto(file) {
   const formData = new FormData();
   formData.append("photo", file);
 
-  const resp = await fetch(`${API_BASE_URL}/api/v1/qr-reviews/uploads/shop-photo`, {
+  const resp = await fetch(`${API_BASE_URL}/api/v1/qr-reviews/uploads/shop-photo?type=${type}`, {
     method: "POST",
     headers,
     body: formData,

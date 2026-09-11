@@ -191,9 +191,17 @@ function ReviewFlow({ shopInfo, qrId }) {
             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
             <div className="absolute -bottom-10 -left-6 w-24 h-24 rounded-full bg-white/10" />
             <div className="flex items-center gap-3.5 relative">
-              <div className="w-13 h-13 w-[52px] h-[52px] bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                {shopInfo.shop_name?.[0]}
-              </div>
+              {shopInfo.logo_url ? (
+                <img
+                  src={shopInfo.logo_url}
+                  alt={`${shopInfo.shop_name} logo`}
+                  className="w-[52px] h-[52px] rounded-2xl object-cover flex-shrink-0 bg-white/20"
+                />
+              ) : (
+                <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                  {shopInfo.shop_name?.[0]}
+                </div>
+              )}
               <div className="min-w-0">
                 <h1 className="text-lg font-bold leading-tight truncate">{shopInfo.shop_name}</h1>
                 <div className="flex items-center gap-1.5 mt-1">
@@ -395,11 +403,12 @@ function ReviewFlow({ shopInfo, qrId }) {
 
 function BusinessInfoSection({ shopInfo }) {
   const hasPhoto = !!shopInfo.photo_url;
+  const hasGallery = Array.isArray(shopInfo.gallery_photos) && shopInfo.gallery_photos.length > 0;
   const hasAboutUs = !!shopInfo.about_us;
   const hasHours = !!shopInfo.open_hours;
-  const hasFooterInfo = shopInfo.owner_name || shopInfo.contact_phone || shopInfo.address;
+  const hasFooterInfo = shopInfo.owner_name || shopInfo.contact_phone || shopInfo.contact_email || shopInfo.address;
 
-  if (!hasPhoto && !hasAboutUs && !hasHours && !hasFooterInfo) {
+  if (!hasPhoto && !hasGallery && !hasAboutUs && !hasHours && !hasFooterInfo) {
     return null;
   }
 
@@ -407,6 +416,22 @@ function BusinessInfoSection({ shopInfo }) {
     <div className="app-card overflow-hidden fade-in mt-5">
       {hasPhoto && (
         <img src={shopInfo.photo_url} alt={shopInfo.shop_name} className="w-full h-44 object-cover" />
+      )}
+
+      {hasGallery && (
+        <div className="px-5 pt-5 sm:px-7">
+          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Gallery</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {shopInfo.gallery_photos.map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`${shopInfo.shop_name} photo ${i + 1}`}
+                className="w-full h-20 sm:h-24 object-cover rounded-lg"
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {(hasAboutUs || hasHours) && (
@@ -445,6 +470,16 @@ function BusinessInfoSection({ shopInfo }) {
               </svg>
               <a href={`tel:${shopInfo.contact_phone}`} className="hover:text-violet-600">
                 {shopInfo.contact_phone}
+              </a>
+            </p>
+          )}
+          {shopInfo.contact_email && (
+            <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+              <a href={`mailto:${shopInfo.contact_email}`} className="hover:text-violet-600">
+                {shopInfo.contact_email}
               </a>
             </p>
           )}

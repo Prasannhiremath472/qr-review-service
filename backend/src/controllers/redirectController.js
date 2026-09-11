@@ -44,6 +44,15 @@ async function resolve(req, res) {
     });
   }
 
+  let galleryPhotos = [];
+  if (shop.gallery_photos) {
+    try {
+      galleryPhotos = JSON.parse(shop.gallery_photos);
+    } catch (err) {
+      galleryPhotos = [];
+    }
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -55,10 +64,13 @@ async function resolve(req, res) {
       review_url: shop.review_url,
       qr_code_id: qrCode.id,
       photo_url: shop.photo_url || "",
+      logo_url: shop.logo_url || "",
+      gallery_photos: galleryPhotos,
       about_us: shop.about_us || "",
       open_hours: shop.open_hours || "",
       whatsapp_number: shop.whatsapp_number || "",
       contact_phone: shop.contact_phone || "",
+      contact_email: shop.contact_email || "",
       address: shop.address || "",
       owner_name: shop.owner_name || "",
     },
