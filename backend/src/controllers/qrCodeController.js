@@ -1,5 +1,5 @@
 const qrCodeService = require("../services/qrCodeService");
-const prisma = require("../lib/prisma");
+const db = require("../lib/db");
 const { generateBytes } = require("../lib/qrgen");
 const config = require("../config/config");
 const { parsePagination, paginationMeta } = require("../lib/pagination");
@@ -76,12 +76,12 @@ async function getById(req, res) {
 async function image(req, res) {
   const id = req.params.id;
   try {
-    const qrCode = await prisma.qRCode.findUnique({ where: { id } });
-    if (!qrCode) {
+    const [rows] = await db.query("SELECT id FROM qr_codes WHERE id = ?", [id]);
+    if (rows.length === 0) {
       return res.status(404).send("QR code not found");
     }
 
-    const qrUrl = `${config.frontendUrl}/r/${qrCode.id}`;
+    const qrUrl = `${config.frontendUrl}/r/${id}`;
     const png = await generateBytes(qrUrl, 512);
     res.set("Content-Type", "image/png");
     res.status(200).send(png);
@@ -95,31 +95,28 @@ async function dashboard(req, res) {
   const shopId = req.params.shop_id;
 
   try {
-    const shop = await prisma.shop.findUnique({ where: { id: shopId } });
+    const [shopRows] = await db.query("SELECT * FROM shops WHERE id = ?", [shopId]);
+    const shop = shopRows[0];
     if (!shop) {
       return res.status(404).json({ success: false, message: "Shop not found" });
     }
 
-    if (req.user.role === "OWNER" && shop.ownerUserId !== req.user.id) {
+    if (req.user.role === "OWNER" && shop.owner_user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: "Forbidden: not your shop" });
     }
 
     const { page, limit, skip } = parsePagination(req.query);
 
-    const [qrCodes, total] = await Promise.all([
-      prisma.qRCode.findMany({
-        where: { shopId },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.qRCode.count({ where: { shopId } }),
-    ]);
+    const [qrRows] = await db.query(
+      "SELECT * FROM qr_codes WHERE shop_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [shopId, limit, skip]
+    );
+    const [countRows] = await db.query("SELECT COUNT(*) AS total FROM qr_codes WHERE shop_id = ?", [shopId]);
 
-    const codes = qrCodes.map((qr) => ({
+    const codes = qrRows.map((qr) => ({
       id: qr.id,
       label: qr.label,
-      scan_count: qr.scanCount,
+      scan_count: qr.scan_count,
       image_url: `${config.baseUrl}/qr-image/${qr.id}`,
       scan_url: `${config.frontendUrl}/r/${qr.id}`,
     }));
@@ -131,7 +128,7 @@ async function dashboard(req, res) {
         shop_id: shop.id,
         qr_codes: codes,
       },
-      meta: paginationMeta(page, limit, total),
+      meta: paginationMeta(page, limit, countRows[0].total),
     });
   } catch (err) {
     res.status(500).json({ success: false, message: "Failed to load QR codes" });
@@ -143,29 +140,29 @@ async function listAll(req, res) {
   try {
     const { page, limit, skip } = parsePagination(req.query);
 
-    const [qrCodes, total] = await Promise.all([
-      prisma.qRCode.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { shop: { select: { id: true, name: true } } },
-        skip,
-        take: limit,
-      }),
-      prisma.qRCode.count(),
-    ]);
+    const [rows] = await db.query(
+      `SELECT qr.*, s.name AS shop_name
+       FROM qr_codes qr
+       LEFT JOIN shops s ON s.id = qr.shop_id
+       ORDER BY qr.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [limit, skip]
+    );
+    const [countRows] = await db.query("SELECT COUNT(*) AS total FROM qr_codes");
 
-    const results = qrCodes.map((qr) => ({
+    const results = rows.map((qr) => ({
       id: qr.id,
       label: qr.label,
-      scan_count: qr.scanCount,
-      is_active: qr.isActive,
-      is_linked: !!qr.shopId,
-      shop_id: qr.shopId || "",
-      shop_name: qr.shop?.name || "",
+      scan_count: qr.scan_count,
+      is_active: !!qr.is_active,
+      is_linked: !!qr.shop_id,
+      shop_id: qr.shop_id || "",
+      shop_name: qr.shop_name || "",
       scan_url: `${config.frontendUrl}/r/${qr.id}`,
-      created_at: qr.createdAt.toISOString(),
+      created_at: qr.created_at.toISOString(),
     }));
 
-    res.status(200).json({ success: true, data: results, meta: paginationMeta(page, limit, total) });
+    res.status(200).json({ success: true, data: results, meta: paginationMeta(page, limit, countRows[0].total) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

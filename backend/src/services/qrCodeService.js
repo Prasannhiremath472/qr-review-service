@@ -1,4 +1,5 @@
-const prisma = require("../lib/prisma");
+const crypto = require("crypto");
+const db = require("../lib/db");
 const { generate: generateQrImage } = require("../lib/qrgen");
 const { generateBase62Id } = require("../lib/shortId");
 const config = require("../config/config");
@@ -7,13 +8,13 @@ function toQrCodeResponse(qrCode, extra = {}) {
   const qrUrl = `${config.frontendUrl}/r/${qrCode.id}`;
   return {
     id: qrCode.id,
-    shop_id: qrCode.shopId || "",
+    shop_id: qrCode.shop_id || "",
     label: qrCode.label,
-    scan_count: qrCode.scanCount,
-    is_active: qrCode.isActive,
-    is_linked: !!qrCode.shopId,
+    scan_count: qrCode.scan_count,
+    is_active: !!qrCode.is_active,
+    is_linked: !!qrCode.shop_id,
     qr_code_url: qrUrl,
-    created_at: qrCode.createdAt.toISOString(),
+    created_at: qrCode.created_at.toISOString(),
     ...extra,
   };
 }
@@ -22,8 +23,8 @@ function toQrCodeResponse(qrCode, extra = {}) {
 async function generateUniqueId() {
   for (let i = 0; i < 5; i++) {
     const id = generateBase62Id(6);
-    const existing = await prisma.qRCode.findUnique({ where: { id } });
-    if (!existing) return id;
+    const [rows] = await db.query("SELECT id FROM qr_codes WHERE id = ? LIMIT 1", [id]);
+    if (rows.length === 0) return id;
   }
   throw new Error("failed to generate unique QR ID after 5 attempts");
 }
@@ -33,8 +34,8 @@ async function createQRCode(req) {
   let shopId = null;
 
   if (req.shop_id) {
-    const shop = await prisma.shop.findUnique({ where: { id: req.shop_id } });
-    if (!shop) {
+    const [shopRows] = await db.query("SELECT id FROM shops WHERE id = ?", [req.shop_id]);
+    if (shopRows.length === 0) {
       throw new Error("shop not found");
     }
     shopId = req.shop_id;
@@ -42,19 +43,17 @@ async function createQRCode(req) {
 
   const id = await generateUniqueId();
 
-  const qrCode = await prisma.qRCode.create({
-    data: {
-      id,
-      shopId,
-      label: req.label || "",
-      isActive: true,
-    },
-  });
+  await db.query(
+    "INSERT INTO qr_codes (id, shop_id, label, is_active) VALUES (?, ?, ?, ?)",
+    [id, shopId, req.label || "", true]
+  );
+
+  const [rows] = await db.query("SELECT * FROM qr_codes WHERE id = ?", [id]);
 
   const qrUrl = `${config.frontendUrl}/r/${id}`;
   const imageBase64 = await generateQrImage(qrUrl, 256).catch(() => "");
 
-  return toQrCodeResponse(qrCode, { image_base64: imageBase64 });
+  return toQrCodeResponse(rows[0], { image_base64: imageBase64 });
 }
 
 // bulkCreateQRCodes generates multiple unlinked QR codes for pre-printing.
@@ -71,19 +70,17 @@ async function bulkCreateQRCodes(req) {
       label = `${req.label}-${i + 1}`;
     }
 
-    const qrCode = await prisma.qRCode.create({
-      data: {
-        id,
-        shopId: null,
-        label,
-        isActive: true,
-      },
-    });
+    await db.query(
+      "INSERT INTO qr_codes (id, shop_id, label, is_active) VALUES (?, ?, ?, ?)",
+      [id, null, label, true]
+    );
+
+    const [rows] = await db.query("SELECT * FROM qr_codes WHERE id = ?", [id]);
 
     const qrUrl = `${config.frontendUrl}/r/${id}`;
     const imageBase64 = await generateQrImage(qrUrl, 256).catch(() => "");
 
-    results.push(toQrCodeResponse(qrCode, { image_base64: imageBase64 }));
+    results.push(toQrCodeResponse(rows[0], { image_base64: imageBase64 }));
   }
 
   return results;
@@ -91,11 +88,12 @@ async function bulkCreateQRCodes(req) {
 
 // activateQRCode links an unlinked QR code to a new business.
 async function activateQRCode(qrId, req) {
-  const qrCode = await prisma.qRCode.findUnique({ where: { id: qrId } });
+  const [qrRows] = await db.query("SELECT * FROM qr_codes WHERE id = ?", [qrId]);
+  const qrCode = qrRows[0];
   if (!qrCode) {
     throw new Error("QR code not found");
   }
-  if (qrCode.shopId) {
+  if (qrCode.shop_id) {
     throw new Error("QR code is already linked to a business");
   }
 
@@ -103,39 +101,34 @@ async function activateQRCode(qrId, req) {
 
   let ownerUserId = null;
   if (req.owner_user_id) {
-    const owner = await prisma.user.findUnique({ where: { id: req.owner_user_id } });
+    const [ownerRows] = await db.query("SELECT id, role FROM users WHERE id = ?", [req.owner_user_id]);
+    const owner = ownerRows[0];
     if (!owner || owner.role !== "OWNER") {
       throw new Error("owner_user_id must reference an existing OWNER user");
     }
     ownerUserId = owner.id;
   }
 
-  const shop = await prisma.shop.create({
-    data: {
-      name: req.business_name,
-      ownerName: req.owner_name || "",
-      businessType,
-      city: req.city || "",
-      reviewUrl: req.review_url,
-      ownerUserId,
-    },
-  });
+  const shopId = crypto.randomUUID();
+  await db.query(
+    `INSERT INTO shops (id, name, owner_name, business_type, city, review_url, owner_user_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [shopId, req.business_name, req.owner_name || "", businessType, req.city || "", req.review_url, ownerUserId]
+  );
 
-  await prisma.qRCode.update({
-    where: { id: qrId },
-    data: { shopId: shop.id },
-  });
+  await db.query("UPDATE qr_codes SET shop_id = ? WHERE id = ?", [shopId, qrId]);
 
-  return shop;
+  const [shopRows] = await db.query("SELECT * FROM shops WHERE id = ?", [shopId]);
+  return shopRows[0];
 }
 
 // getQRCodeById retrieves a QR code by its short ID.
 async function getQRCodeById(id) {
-  const qrCode = await prisma.qRCode.findUnique({ where: { id } });
-  if (!qrCode) {
+  const [rows] = await db.query("SELECT * FROM qr_codes WHERE id = ?", [id]);
+  if (rows.length === 0) {
     throw new Error("QR code not found");
   }
-  return toQrCodeResponse(qrCode);
+  return toQrCodeResponse(rows[0]);
 }
 
 module.exports = {

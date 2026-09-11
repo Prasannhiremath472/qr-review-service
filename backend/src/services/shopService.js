@@ -1,30 +1,28 @@
-const prisma = require("../lib/prisma");
+const crypto = require("crypto");
+const db = require("../lib/db");
 
 // createShop creates a new shop from the request payload.
 async function createShop(req) {
   const businessType = req.business_type || "business";
+  const id = crypto.randomUUID();
 
-  const shop = await prisma.shop.create({
-    data: {
-      name: req.name,
-      ownerName: req.owner_name || "",
-      businessType,
-      city: req.city || "",
-      reviewUrl: req.review_url,
-      organizationId: req.organization_id || null,
-    },
-  });
+  await db.query(
+    `INSERT INTO shops (id, name, owner_name, business_type, city, review_url, organization_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, req.name, req.owner_name || "", businessType, req.city || "", req.review_url, req.organization_id || null]
+  );
 
-  return shop;
+  const [rows] = await db.query("SELECT * FROM shops WHERE id = ?", [id]);
+  return rows[0];
 }
 
 // getShopById retrieves a shop by its UUID.
 async function getShopById(id) {
-  const shop = await prisma.shop.findUnique({ where: { id } });
-  if (!shop) {
+  const [rows] = await db.query("SELECT * FROM shops WHERE id = ?", [id]);
+  if (rows.length === 0) {
     throw new Error("shop not found");
   }
-  return shop;
+  return rows[0];
 }
 
 module.exports = { createShop, getShopById };

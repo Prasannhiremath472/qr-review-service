@@ -1,5 +1,5 @@
 const shopService = require("../services/shopService");
-const prisma = require("../lib/prisma");
+const db = require("../lib/db");
 
 async function create(req, res) {
   const { name, review_url } = req.body;
@@ -34,11 +34,11 @@ async function getById(req, res) {
 // listMine handles GET /api/v1/qr-reviews/shops/mine — the shops owned by the logged-in OWNER.
 async function listMine(req, res) {
   try {
-    const shops = await prisma.shop.findMany({
-      where: { ownerUserId: req.user.id },
-      orderBy: { createdAt: "desc" },
-    });
-    res.status(200).json({ success: true, data: shops });
+    const [rows] = await db.query(
+      "SELECT * FROM shops WHERE owner_user_id = ? ORDER BY created_at DESC",
+      [req.user.id]
+    );
+    res.status(200).json({ success: true, data: rows });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

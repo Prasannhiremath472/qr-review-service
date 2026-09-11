@@ -1,34 +1,39 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const prisma = require("../lib/prisma");
+const crypto = require("crypto");
+const db = require("../lib/db");
 const config = require("../config/config");
 
 const SALT_ROUNDS = 10;
 
 // createUser creates a new user account with the given role. Only callable by an admin.
 async function createUser({ email, password, name, role }) {
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  const [existingRows] = await db.query("SELECT id FROM users WHERE email = ? LIMIT 1", [email]);
+  if (existingRows.length > 0) {
     throw new Error("A user with this email already exists");
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const id = crypto.randomUUID();
 
-  const user = await prisma.user.create({
-    data: { email, passwordHash, name: name || "", role },
-  });
+  await db.query(
+    "INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)",
+    [id, email, passwordHash, name || "", role]
+  );
 
-  return toUserResponse(user);
+  const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [id]);
+  return toUserResponse(rows[0]);
 }
 
 // login verifies credentials and returns a signed JWT plus the user profile.
 async function login(email, password) {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const [rows] = await db.query("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
+  const user = rows[0];
   if (!user) {
     throw new Error("Invalid email or password");
   }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
+  const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) {
     throw new Error("Invalid email or password");
   }
@@ -50,7 +55,7 @@ function toUserResponse(user) {
     email: user.email,
     name: user.name,
     role: user.role,
-    created_at: user.createdAt,
+    created_at: user.created_at,
   };
 }
 

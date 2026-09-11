@@ -1,5 +1,5 @@
 const authService = require("../services/authService");
-const prisma = require("../lib/prisma");
+const db = require("../lib/db");
 const { parsePagination, paginationMeta } = require("../lib/pagination");
 
 const VALID_ROLES = ["ADMIN", "SALESMAN", "OWNER"];
@@ -44,17 +44,17 @@ async function listUsers(req, res) {
   try {
     const { page, limit, skip } = parsePagination(req.query);
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        select: { id: true, email: true, name: true, role: true, createdAt: true },
-        skip,
-        take: limit,
-      }),
-      prisma.user.count(),
-    ]);
+    const [rows] = await db.query(
+      "SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [limit, skip]
+    );
+    const [countRows] = await db.query("SELECT COUNT(*) AS total FROM users");
 
-    res.status(200).json({ success: true, data: users, meta: paginationMeta(page, limit, total) });
+    res.status(200).json({
+      success: true,
+      data: rows,
+      meta: paginationMeta(page, limit, countRows[0].total),
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -62,14 +62,11 @@ async function listUsers(req, res) {
 
 async function me(req, res) {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!user) {
+    const [rows] = await db.query("SELECT id, email, name, role FROM users WHERE id = ?", [req.user.id]);
+    if (rows.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    res.status(200).json({
-      success: true,
-      data: { id: user.id, email: user.email, name: user.name, role: user.role },
-    });
+    res.status(200).json({ success: true, data: rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

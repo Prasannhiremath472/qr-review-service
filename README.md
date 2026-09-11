@@ -2,7 +2,7 @@
 
 QR-code-based Google Review collection service, split into two independently deployable apps for Hostinger:
 
-- **`backend/`** — Node.js + Express + Prisma API (MySQL)
+- **`backend/`** — Node.js + Express + mysql2 (raw SQL, no ORM)
 - **`frontend/`** — Vite + React single-page app
 
 ## Local development
@@ -13,7 +13,7 @@ QR-code-based Google Review collection service, split into two independently dep
 cd backend
 cp .env.example .env   # fill in DATABASE_URL (MySQL), QR_BASE_URL, JWT_SECRET, GEMINI_API_KEY, etc.
 npm install
-npx prisma migrate dev --name init   # creates tables in your MySQL database
+npm run db:migrate                   # creates tables in your MySQL database (db/schema.sql)
 SEED_ADMIN_EMAIL=admin@yourdomain.com SEED_ADMIN_PASSWORD=your-strong-password npm run seed:admin
 npm run dev                          # starts on PORT (default 8098)
 ```
@@ -42,11 +42,11 @@ npm run dev
    - `JWT_SECRET` (a long random string — required; generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
    - `GEMINI_API_KEY` (optional — falls back to canned reviews if omitted)
    - `PORT` (Hostinger usually sets this automatically)
-   - **Database**: if Hostinger's panel lets you add a custom `DATABASE_URL`, set it directly (`mysql://USER:PASSWORD@HOST:3306/DBNAME`). If it only exposes separate `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_NAME` fields (no custom vars allowed), leave `DATABASE_URL` unset — `scripts/build-database-url.js` composes it automatically from those three on every install/start (assumes host `localhost`; set `DATABASE_HOST` too if that's ever different).
-4. Deploying runs `npm install` then `npm start` automatically. Both already trigger everything needed via lifecycle hooks:
-   - `postinstall` → builds `DATABASE_URL` if needed, then `prisma generate`
-   - `prestart` → builds `DATABASE_URL` if needed, then `prisma migrate deploy`
-5. After the first successful deploy, seed the first admin account once (there's no terminal access on most Hostinger Node plans, so temporarily add `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` as environment variables, redeploy, then remove them — `npm run seed:admin` is safe to leave wired up since it skips creation if that email already exists, but the credentials shouldn't stay in the panel long-term).
+   - **Database**: if Hostinger's panel lets you add a custom `DATABASE_URL`, set it directly (`mysql://USER:PASSWORD@HOST:3306/DBNAME`). If it only exposes separate `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_NAME` fields (no custom vars allowed), leave `DATABASE_URL` unset — `src/config/config.js` composes it automatically from those three at startup (assumes host `localhost`; set `DATABASE_HOST` too if that's ever different).
+4. Deploying runs `npm install` then `npm start` automatically. `prestart` already runs everything needed: applies `db/schema.sql` (idempotent — safe to re-run) and seeds the admin account if `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` are set.
+5. After the first successful deploy, seed the first admin account once (there's no terminal access on most Hostinger Node plans, so temporarily add `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` as environment variables, redeploy, then remove them — the seed step is safe to leave wired up permanently since it skips creation if that email already exists and never seeds without both variables explicitly set, but the credentials shouldn't stay in the panel long-term).
+
+Alternative to steps 4-5 if you'd rather apply the schema by hand: paste `backend/db/schema.sql` into phpMyAdmin's SQL tab once, and/or run the admin `INSERT` yourself with a bcrypt-hashed password.
 
 ### Frontend (static hosting)
 
