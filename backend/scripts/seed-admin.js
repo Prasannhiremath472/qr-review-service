@@ -2,7 +2,10 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const db = require("../src/lib/db");
 
-async function main() {
+// seedAdmin creates the first ADMIN account from SEED_ADMIN_EMAIL /
+// SEED_ADMIN_PASSWORD env vars, if set and not already present. No-op
+// otherwise — safe to call on every server start.
+async function seedAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
 
@@ -29,9 +32,13 @@ async function main() {
   console.log("Log in and change this password immediately, or create a new admin and delete this one.");
 }
 
-main()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  })
-  .finally(() => db.end());
+if (require.main === module) {
+  seedAdmin()
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    })
+    .finally(() => db.end());
+}
+
+module.exports = { seedAdmin };

@@ -8,7 +8,11 @@ async function runFile(connection, filePath) {
   await connection.query(sql);
 }
 
-async function main() {
+// runMigrations applies db/schema.sql and every file in db/migrations, in
+// order. Every statement in those files is idempotent, so this is safe to
+// call on every server start regardless of how the process was launched
+// (some hosts run the entry file directly, bypassing npm's prestart hook).
+async function runMigrations() {
   const connection = await mysql.createConnection({ uri: config.databaseUrl, multipleStatements: true });
   try {
     await runFile(connection, path.join(__dirname, "..", "db", "schema.sql"));
@@ -27,7 +31,11 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Migration failed:", err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  runMigrations().catch((err) => {
+    console.error("Migration failed:", err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { runMigrations };

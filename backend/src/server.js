@@ -4,6 +4,8 @@ const cors = require("cors");
 const config = require("./config/config");
 const { requestLogger } = require("./middleware/logging");
 const { setupRoutes } = require("./routes/routes");
+const { runMigrations } = require("../scripts/migrate");
+const { seedAdmin } = require("../scripts/seed-admin");
 
 const app = express();
 
@@ -27,6 +29,19 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(config.port, () => {
-  console.log(`QR Review Service starting on port ${config.port}`);
+// Run schema migrations (and seed the admin, if configured) before accepting
+// traffic. Done here rather than relying solely on npm's prestart hook,
+// since some hosts launch the entry file directly and skip that hook.
+async function start() {
+  await runMigrations();
+  await seedAdmin();
+
+  app.listen(config.port, () => {
+    console.log(`QR Review Service starting on port ${config.port}`);
+  });
+}
+
+start().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
