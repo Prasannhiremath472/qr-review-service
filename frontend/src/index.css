@@ -1,0 +1,242 @@
+:root {
+  --brand-50: #faf5ff;
+  --brand-100: #f3e8ff;
+  --brand-200: #e9d5ff;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+  --ink-900: #18181b;
+  --ink-700: #3f3f46;
+  --ink-500: #71717a;
+  --ink-400: #a1a1aa;
+  --surface: #ffffff;
+  --surface-muted: #f8f7fb;
+  --border-soft: #ecebf3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--surface-muted);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Tap targets shouldn't show the mobile blue flash */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Layout helpers ---------- */
+
+.app-bg {
+  min-height: 100svh;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 0%, var(--brand-50) 0%, transparent 45%),
+    radial-gradient(circle at 100% 20%, #eef2ff 0%, transparent 40%),
+    var(--surface-muted);
+}
+
+.app-card {
+  background: var(--surface);
+  border-radius: 1.75rem;
+  box-shadow:
+    0 1px 2px rgba(24, 24, 27, 0.04),
+    0 12px 32px -12px rgba(109, 40, 217, 0.18);
+  border: 1px solid var(--border-soft);
+}
+
+/* ---------- Star rating ---------- */
+
+.star {
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+  line-height: 1;
+  display: inline-block;
+}
+.star:hover {
+  transform: scale(1.2) translateY(-1px);
+}
+.star:active {
+  transform: scale(0.95);
+}
+.star.active {
+  color: #f59e0b;
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.35));
+}
+.star.inactive {
+  color: #e4e4e7;
+}
+
+/* ---------- Motion ---------- */
+
+.fade-in {
+  animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slide-up {
+  animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pop-in {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f3f0ff 25%, #e9e4fc 50%, #f3f0ff 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.pulse-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Buttons ---------- */
+
+.btn-gradient {
+  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-700) 55%, var(--brand-800) 100%);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 10px 24px -8px rgba(109, 40, 217, 0.55);
+}
+.btn-gradient:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -8px rgba(109, 40, 217, 0.6);
+}
+.btn-gradient:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+.btn-gradient:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.btn-ghost {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Inputs ---------- */
+
+.field-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-input:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+}
+
+/* ---------- Misc surfaces ---------- */
+
+.review-card {
+  background: linear-gradient(155deg, var(--brand-50) 0%, var(--brand-100) 100%);
+  border: 1.5px solid var(--brand-200);
+}
+
+.skeleton-block {
+  background: var(--border-soft);
+  border-radius: 0.75rem;
+}
+
+/* ---------- Scrollbar polish (webkit) ---------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .qr-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
