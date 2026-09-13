@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext.jsx";
+import { OwnerShopProvider } from "./auth/OwnerShopContext.jsx";
 import ProtectedRoute from "./auth/ProtectedRoute.jsx";
 import ReviewPage from "./pages/ReviewPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
@@ -14,8 +15,10 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import SalesmanOverviewPage from "./pages/SalesmanOverviewPage.jsx";
 import SalesmanQrCodesPage from "./pages/SalesmanQrCodesPage.jsx";
 import SalesmanAccountsPage from "./pages/SalesmanAccountsPage.jsx";
-import OwnerDashboardPage from "./pages/OwnerDashboardPage.jsx";
-import OwnerShopsPage from "./pages/OwnerShopsPage.jsx";
+import OwnerOverviewPage from "./pages/OwnerOverviewPage.jsx";
+import OwnerBusinessPage from "./pages/OwnerBusinessPage.jsx";
+import OwnerQrPage from "./pages/OwnerQrPage.jsx";
+import OwnerNotificationsPage from "./pages/OwnerNotificationsPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 export default function App() {
@@ -132,15 +135,39 @@ export default function App() {
             path="/my-shops"
             element={
               <ProtectedRoute roles={["OWNER"]}>
-                <OwnerDashboardPage />
+                <OwnerShopProvider>
+                  <OwnerOverviewPage />
+                </OwnerShopProvider>
               </ProtectedRoute>
             }
           />
           <Route
-            path="/my-shops/all"
+            path="/my-shops/business"
             element={
               <ProtectedRoute roles={["OWNER"]}>
-                <OwnerShopsPage />
+                <OwnerShopProvider>
+                  <OwnerBusinessPage />
+                </OwnerShopProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-shops/qr"
+            element={
+              <ProtectedRoute roles={["OWNER"]}>
+                <OwnerShopProvider>
+                  <OwnerQrPage />
+                </OwnerShopProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-shops/notifications"
+            element={
+              <ProtectedRoute roles={["OWNER"]}>
+                <OwnerShopProvider>
+                  <OwnerNotificationsPage />
+                </OwnerShopProvider>
               </ProtectedRoute>
             }
           />
@@ -148,7 +175,9 @@ export default function App() {
             path="/my-shops/settings"
             element={
               <ProtectedRoute roles={["OWNER"]}>
-                <SettingsPage />
+                <OwnerShopProvider>
+                  <SettingsPage />
+                </OwnerShopProvider>
               </ProtectedRoute>
             }
           />

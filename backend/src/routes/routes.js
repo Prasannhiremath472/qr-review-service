@@ -27,6 +27,8 @@ function setupRoutes(app) {
   api.get("/shops", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.listClients);
   api.get("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.getById);
   api.patch("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.update);
+  api.get("/shops/:id/analytics", requireAuth, shopController.myAnalytics);
+  api.get("/shops/:shop_id/activity", requireAuth, feedbackController.listActivity);
 
   // QR code endpoints
   api.post("/qr", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.create);

@@ -126,6 +126,14 @@ export function getShopAnalytics({ page = 1, limit = 20 } = {}) {
   return request(`/api/v1/qr-reviews/shops/analytics?page=${page}&limit=${limit}`);
 }
 
+export function getMyShopAnalytics(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/analytics`);
+}
+
+export function getShopActivity(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/activity`);
+}
+
 export async function uploadShopPhoto(file, type = "photo") {
   const token = getToken();
   const headers = {};
