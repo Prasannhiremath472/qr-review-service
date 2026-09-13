@@ -36,6 +36,13 @@ export function getMe() {
   return request(`/api/v1/qr-reviews/auth/me`);
 }
 
+export function changePassword(payload) {
+  return request(`/api/v1/qr-reviews/auth/change-password`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function createUser(payload) {
   return request(`/api/v1/qr-reviews/auth/users`, {
     method: "POST",
@@ -95,6 +102,28 @@ export function getDashboard(shopId, { page = 1, limit = 12 } = {}) {
 
 export function getMyShops() {
   return request(`/api/v1/qr-reviews/shops/mine`);
+}
+
+export function createShop(payload) {
+  return request(`/api/v1/qr-reviews/shops`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listClients({ page = 1, limit = 10 } = {}) {
+  return request(`/api/v1/qr-reviews/shops?page=${page}&limit=${limit}`);
+}
+
+export function updateShop(shopId, payload) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getShopAnalytics({ page = 1, limit = 20 } = {}) {
+  return request(`/api/v1/qr-reviews/shops/analytics?page=${page}&limit=${limit}`);
 }
 
 export async function uploadShopPhoto(file, type = "photo") {

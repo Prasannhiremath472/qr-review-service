@@ -72,4 +72,23 @@ async function me(req, res) {
   }
 }
 
-module.exports = { login, createUser, listUsers, me };
+// changePassword handles POST /api/v1/qr-reviews/auth/change-password — any
+// logged-in user updating their own password.
+async function changePassword(req, res) {
+  const { current_password, new_password } = req.body || {};
+  if (!current_password || !new_password) {
+    return res.status(400).json({ success: false, message: "current_password and new_password are required" });
+  }
+  if (new_password.length < 8) {
+    return res.status(400).json({ success: false, message: "new_password must be at least 8 characters" });
+  }
+
+  try {
+    await authService.changePassword(req.user.id, current_password, new_password);
+    res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+module.exports = { login, createUser, listUsers, me, changePassword };

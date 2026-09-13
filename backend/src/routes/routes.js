@@ -16,13 +16,17 @@ function setupRoutes(app) {
   // Auth endpoints
   api.post("/auth/login", authController.login);
   api.get("/auth/me", requireAuth, authController.me);
+  api.post("/auth/change-password", requireAuth, authController.changePassword);
   api.post("/auth/users", requireAuth, requireRole("ADMIN"), authController.createUser);
   api.get("/auth/users", requireAuth, requireRole("ADMIN", "SALESMAN"), authController.listUsers);
 
   // Shop endpoints (admin management)
-  api.post("/shops", requireAuth, requireRole("ADMIN"), shopController.create);
+  api.post("/shops", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.create);
   api.get("/shops/mine", requireAuth, requireRole("OWNER"), shopController.listMine);
+  api.get("/shops/analytics", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.analytics);
+  api.get("/shops", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.listClients);
   api.get("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.getById);
+  api.patch("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.update);
 
   // QR code endpoints
   api.post("/qr", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.create);

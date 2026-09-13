@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS `shops` (
     `contact_phone` VARCHAR(30) NOT NULL DEFAULT '',
     `contact_email` VARCHAR(255) NOT NULL DEFAULT '',
     `address` VARCHAR(500) NOT NULL DEFAULT '',
+    `review_views` INTEGER NOT NULL DEFAULT 0,
+    `subscription_start_date` DATE NULL,
+    `subscription_end_date` DATE NULL,
+    `subscription_status` ENUM('ACTIVE', 'SUSPENDED') NOT NULL DEFAULT 'ACTIVE',
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 

@@ -7,6 +7,10 @@ import LoginPage from "./pages/LoginPage.jsx";
 import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
 import AdminAccountsPage from "./pages/AdminAccountsPage.jsx";
 import AdminQrCodesPage from "./pages/AdminQrCodesPage.jsx";
+import AdminClientsPage from "./pages/AdminClientsPage.jsx";
+import AdminAnalyticsPage from "./pages/AdminAnalyticsPage.jsx";
+import AdminSubscriptionPage from "./pages/AdminSubscriptionPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 import SalesmanOverviewPage from "./pages/SalesmanOverviewPage.jsx";
 import SalesmanQrCodesPage from "./pages/SalesmanQrCodesPage.jsx";
 import SalesmanAccountsPage from "./pages/SalesmanAccountsPage.jsx";
@@ -56,6 +60,38 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/clients"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminClientsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/subscription"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminSubscriptionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Salesman */}
           <Route
@@ -82,6 +118,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/salesman/settings"
+            element={
+              <ProtectedRoute roles={["SALESMAN"]}>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Owner */}
           <Route
@@ -97,6 +141,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={["OWNER"]}>
                 <OwnerShopsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-shops/settings"
+            element={
+              <ProtectedRoute roles={["OWNER"]}>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

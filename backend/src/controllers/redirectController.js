@@ -44,6 +44,12 @@ async function resolve(req, res) {
     });
   }
 
+  // Review page view is distinct from QR scan_count: this fires whenever the
+  // customer-facing review page actually renders for this shop.
+  db.query("UPDATE shops SET review_views = review_views + 1 WHERE id = ?", [shop.id]).catch((err) =>
+    console.error("failed to increment review_views", shop.id, err)
+  );
+
   let galleryPhotos = [];
   if (shop.gallery_photos) {
     try {

@@ -49,6 +49,23 @@ function verifyToken(token) {
   return jwt.verify(token, config.jwtSecret);
 }
 
+// changePassword verifies the current password before setting a new one.
+async function changePassword(userId, currentPassword, newPassword) {
+  const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+  const user = rows[0];
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!valid) {
+    throw new Error("Current password is incorrect");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [passwordHash, userId]);
+}
+
 function toUserResponse(user) {
   return {
     id: user.id,
@@ -59,4 +76,4 @@ function toUserResponse(user) {
   };
 }
 
-module.exports = { createUser, login, verifyToken };
+module.exports = { createUser, login, verifyToken, changePassword };
