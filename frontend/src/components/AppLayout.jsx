@@ -102,13 +102,13 @@ export default function AppLayout({ children, title, subtitle }) {
       >
         <div className="flex items-center gap-2.5 px-5 h-16 border-b border-white/10 flex-shrink-0">
           {user?.role === "OWNER" && <OwnerHeaderName />}
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M3.75 4.5A.75.75 0 014.5 3.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zm0 10.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zm10.5-10.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5z" />
-            </svg>
-          </div>
+          <img
+            src="/siteidentity1.png"
+            alt="ReviewGenie"
+            className="w-9 h-9 rounded-xl object-cover flex-shrink-0 bg-white"
+          />
           {user?.role !== "OWNER" && (
-            <span className="font-bold text-white text-[15px] leading-tight">QR Review</span>
+            <span className="font-bold text-white text-[15px] leading-tight">ReviewGenie</span>
           )}
         </div>
 

@@ -381,7 +381,7 @@ function ReviewFlow({ shopInfo, qrId }) {
 
         <BusinessInfoSection shopInfo={shopInfo} />
 
-        <p className="text-center text-xs text-zinc-400 mt-5">Powered by GrowthOS</p>
+        <p className="text-center text-xs text-zinc-400 mt-5">Powered by Infinity Technology Hub</p>
       </div>
 
       {whatsappHref && (

@@ -50,16 +50,7 @@ export default function LoginPage() {
     <div className="app-bg min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="max-w-sm w-full">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 shadow-lg shadow-violet-600/30 flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="ReviewGenie" className="h-16 sm:h-20 w-auto mb-4" />
           <h1 className="text-xl font-bold text-zinc-900">Welcome back</h1>
           <p className="text-sm text-zinc-500 mt-1">Sign in to manage QR reviews</p>
         </div>
@@ -137,7 +128,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-zinc-400 mt-6">Powered by GrowthOS</p>
+        <p className="text-center text-xs text-zinc-400 mt-6">Powered by Infinity Technology Hub</p>
       </div>
     </div>
   );
