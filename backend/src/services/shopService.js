@@ -4,6 +4,7 @@ const db = require("../lib/db");
 const PROFILE_FIELDS = [
   "owner_name",
   "business_type",
+  "tagline",
   "city",
   "review_url",
   "about_us",
@@ -31,6 +32,7 @@ function toClientResponse(shop) {
     name: shop.name,
     owner_name: shop.owner_name || "",
     business_type: shop.business_type || "business",
+    tagline: shop.tagline || "",
     city: shop.city || "",
     review_url: shop.review_url,
     about_us: shop.about_us || "",
@@ -61,16 +63,17 @@ async function createShop(req) {
   const id = crypto.randomUUID();
   await db.query(
     `INSERT INTO shops
-       (id, name, owner_name, business_type, city, review_url,
+       (id, name, owner_name, business_type, tagline, city, review_url,
         photo_url, logo_url, gallery_photos, about_us, open_hours,
         whatsapp_number, contact_phone, contact_email, address,
         subscription_start_date, subscription_end_date, subscription_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       req.name,
       req.owner_name || "",
       req.business_type || "business",
+      req.tagline || "",
       req.city || "",
       req.review_url,
       req.photo_url || null,

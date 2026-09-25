@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `shops` (
     `name` VARCHAR(255) NOT NULL,
     `owner_name` VARCHAR(255) NOT NULL DEFAULT '',
     `business_type` VARCHAR(100) NOT NULL DEFAULT 'business',
+    `tagline` VARCHAR(255) NOT NULL DEFAULT '',
     `city` VARCHAR(100) NOT NULL DEFAULT '',
     `review_url` TEXT NOT NULL,
     `organization_id` VARCHAR(36) NULL,

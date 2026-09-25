@@ -117,15 +117,16 @@ async function activateQRCode(qrId, req) {
   const shopId = crypto.randomUUID();
   await db.query(
     `INSERT INTO shops
-       (id, name, owner_name, business_type, city, review_url, owner_user_id,
+       (id, name, owner_name, business_type, tagline, city, review_url, owner_user_id,
         photo_url, logo_url, gallery_photos, about_us, open_hours,
         whatsapp_number, contact_phone, contact_email, address)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       shopId,
       req.business_name,
       req.owner_name || "",
       businessType,
+      req.tagline || "",
       req.city || "",
       req.review_url,
       ownerUserId,

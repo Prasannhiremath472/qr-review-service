@@ -126,6 +126,9 @@ async function dashboard(req, res) {
       data: {
         shop_name: shop.name,
         shop_id: shop.id,
+        logo_url: shop.logo_url || "",
+        tagline: shop.tagline || "",
+        contact_phone: shop.contact_phone || shop.whatsapp_number || "",
         qr_codes: codes,
       },
       meta: paginationMeta(page, limit, countRows[0].total),

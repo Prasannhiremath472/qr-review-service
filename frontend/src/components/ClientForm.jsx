@@ -17,6 +17,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
   const [city, setCity] = useState("");
   const [reviewUrl, setReviewUrl] = useState(REVIEW_URL_PREFIX);
   const [ownerName, setOwnerName] = useState("");
+  const [tagline, setTagline] = useState("");
   const [aboutUs, setAboutUs] = useState("");
   const [openHours, setOpenHours] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -106,6 +107,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
         city: city.trim(),
         review_url: resolveReviewUrl(reviewUrl),
         owner_name: ownerName.trim(),
+        tagline: tagline.trim(),
         about_us: aboutUs.trim(),
         open_hours: openHours.trim(),
         whatsapp_number: whatsappNumber.trim(),
@@ -195,6 +197,18 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
             onChange={(e) => setOwnerName(e.target.value)}
             className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1.5">Tagline</label>
+          <input
+            type="text"
+            placeholder="e.g. Great Food, Great Vibes"
+            value={tagline}
+            onChange={(e) => setTagline(e.target.value)}
+            className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
+          />
+          <p className="text-xs text-zinc-400 mt-1.5">Shown on the printable QR standee card</p>
         </div>
       </div>
 

@@ -66,6 +66,7 @@ async function resolve(req, res) {
       shop_name: shop.name,
       shop_id: shop.id,
       business_type: shop.business_type || "business",
+      tagline: shop.tagline || "",
       city: shop.city,
       review_url: shop.review_url,
       qr_code_id: qrCode.id,

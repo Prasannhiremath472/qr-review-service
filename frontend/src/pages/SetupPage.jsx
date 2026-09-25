@@ -65,6 +65,7 @@ function ActivationForm({ qrId }) {
   const [city, setCity] = useState("");
   const [reviewUrl, setReviewUrl] = useState(REVIEW_URL_PREFIX);
   const [ownerName, setOwnerName] = useState("");
+  const [tagline, setTagline] = useState("");
   const [aboutUs, setAboutUs] = useState("");
   const [openHours, setOpenHours] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -154,6 +155,7 @@ function ActivationForm({ qrId }) {
         city: city.trim(),
         review_url: resolveReviewUrl(reviewUrl),
         owner_name: ownerName.trim(),
+        tagline: tagline.trim(),
         about_us: aboutUs.trim(),
         open_hours: openHours.trim(),
         whatsapp_number: whatsappNumber.trim(),
@@ -301,6 +303,18 @@ function ActivationForm({ qrId }) {
                   onChange={(e) => setOwnerName(e.target.value)}
                   className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Tagline</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Great Food, Great Vibes"
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                />
+                <p className="text-xs text-zinc-400 mt-1.5">Shown on the printable QR standee card</p>
               </div>
 
               <div className="pt-2 border-t border-zinc-100">

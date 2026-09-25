@@ -3,6 +3,7 @@ import { getDashboard } from "../api/client.js";
 import AppLayout from "../components/AppLayout.jsx";
 import OwnerShopGate from "../components/OwnerShopGate.jsx";
 import Pagination from "../components/Pagination.jsx";
+import StandeeCard from "../components/StandeeCard.jsx";
 
 const PAGE_SIZE = 12;
 
@@ -68,11 +69,14 @@ function QrList({ shop }) {
           <div className="flex flex-wrap gap-5">
             {qrCodes.map((qr) => (
               <div key={qr.id} className="qr-card app-card p-6 text-center fade-in w-full sm:w-72">
-                <div className="bg-zinc-50 rounded-2xl p-3 mb-4 inline-block">
-                  <img
-                    src={qr.image_url}
-                    alt={`QR Code for ${qr.label}`}
-                    className="w-40 h-40 sm:w-44 sm:h-44 mx-auto rounded-lg"
+                <div className="mb-4">
+                  <StandeeCard
+                    businessName={shop.name}
+                    tagline={shop.tagline}
+                    logoUrl={shop.logo_url}
+                    qrImageUrl={qr.image_url}
+                    phone={shop.contact_phone}
+                    filename={`standee-${qr.id}.png`}
                   />
                 </div>
 
@@ -90,17 +94,10 @@ function QrList({ shop }) {
                   <p className="text-xs text-zinc-500 break-all leading-relaxed">{qr.scan_url}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <a
-                    href={qr.image_url}
-                    download={`qr-${qr.id}.png`}
-                    className="btn-ghost bg-zinc-700 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-zinc-800 text-center"
-                  >
-                    Download
-                  </a>
+                <div className="mb-2">
                   <button
                     onClick={() => copyLink(qr)}
-                    className="btn-ghost bg-white border border-zinc-200 text-zinc-700 py-2.5 rounded-xl text-sm font-medium hover:bg-zinc-50"
+                    className="btn-ghost w-full bg-white border border-zinc-200 text-zinc-700 py-2.5 rounded-xl text-sm font-medium hover:bg-zinc-50"
                   >
                     {copiedId === qr.id ? "Copied!" : "Copy Link"}
                   </button>
