@@ -2,6 +2,7 @@ import { useState } from "react";
 import { uploadShopPhoto } from "../api/client.js";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 import { resolveReviewUrl } from "../lib/googleReview.js";
+import ResolvedUrlPreview from "./ResolvedUrlPreview.jsx";
 
 const MAX_GALLERY_PHOTOS = 5;
 const CUSTOM_TYPE_VALUE = "__custom__";
@@ -206,6 +207,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
           onChange={(e) => setReviewUrl(e.target.value)}
           className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
         />
+        <ResolvedUrlPreview input={reviewUrl} />
         <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
           Find the Place ID via{" "}
           <a

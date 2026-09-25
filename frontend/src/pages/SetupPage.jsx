@@ -4,6 +4,7 @@ import { activateQrCode, uploadShopPhoto } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 import { resolveReviewUrl } from "../lib/googleReview.js";
+import ResolvedUrlPreview from "../components/ResolvedUrlPreview.jsx";
 
 export default function SetupPage({ qrId }) {
   const { user, loading } = useAuth();
@@ -270,6 +271,7 @@ function ActivationForm({ qrId }) {
                   onChange={(e) => setReviewUrl(e.target.value)}
                   className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
                 />
+                <ResolvedUrlPreview input={reviewUrl} />
                 <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
                   Find the Place ID via{" "}
                   <a
