@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { activateQrCode, uploadShopPhoto } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
-import { resolveReviewUrl } from "../lib/googleReview.js";
+import { resolveReviewUrl, REVIEW_URL_PREFIX } from "../lib/googleReview.js";
 import ResolvedUrlPreview from "../components/ResolvedUrlPreview.jsx";
 
 export default function SetupPage({ qrId }) {
@@ -63,7 +63,7 @@ function ActivationForm({ qrId }) {
   const [businessType, setBusinessType] = useState("business");
   const [isCustomType, setIsCustomType] = useState(false);
   const [city, setCity] = useState("");
-  const [reviewUrl, setReviewUrl] = useState("");
+  const [reviewUrl, setReviewUrl] = useState(REVIEW_URL_PREFIX);
   const [ownerName, setOwnerName] = useState("");
   const [aboutUs, setAboutUs] = useState("");
   const [openHours, setOpenHours] = useState("");
@@ -115,8 +115,8 @@ function ActivationForm({ qrId }) {
       setError("Business name is required");
       return;
     }
-    if (!reviewUrl.trim()) {
-      setError("Google Review URL is required");
+    if (!resolveReviewUrl(reviewUrl)) {
+      setError("Google Review URL or Place ID is required");
       return;
     }
     if (isCustomType && !businessType.trim()) {
@@ -266,10 +266,15 @@ function ActivationForm({ qrId }) {
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">Google Review URL or Place ID *</label>
                 <input
                   type="text"
-                  placeholder="Paste full URL, or just the Place ID (e.g. ChIJrTLr-GyuEmsRBfy61i59si0)"
                   value={reviewUrl}
                   onChange={(e) => setReviewUrl(e.target.value)}
-                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
+                  onFocus={(e) => {
+                    if (e.target.value === REVIEW_URL_PREFIX) {
+                      const end = e.target.value.length;
+                      e.target.setSelectionRange(end, end);
+                    }
+                  }}
+                  className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60 font-mono"
                 />
                 <ResolvedUrlPreview input={reviewUrl} />
                 <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
@@ -282,7 +287,8 @@ function ActivationForm({ qrId }) {
                   >
                     Google's Place ID Finder
                   </a>{" "}
-                  and paste it directly &mdash; no need to build the full link.
+                  and paste it right after <code className="font-mono">placeid=</code> &mdash; or paste a full review
+                  link to replace this entirely.
                 </p>
               </div>
 
