@@ -100,15 +100,15 @@ export default function AppLayout({ children, title, subtitle }) {
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
-        <div className="flex items-center gap-2.5 px-5 h-16 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-5 h-20 border-b border-white/10 flex-shrink-0">
           {user?.role === "OWNER" && <OwnerHeaderName />}
           <img
             src="/siteidentity1.png"
             alt="ReviewGenie"
-            className="w-9 h-9 rounded-xl object-cover flex-shrink-0 bg-white"
+            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-white"
           />
           {user?.role !== "OWNER" && (
-            <span className="font-bold text-white text-[15px] leading-tight">ReviewGenie</span>
+            <span className="font-bold text-white text-lg leading-tight">ReviewGenie</span>
           )}
         </div>
 
