@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { activateQrCode, uploadShopPhoto } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
+import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 
 export default function SetupPage({ qrId }) {
   const { user, loading } = useAuth();
@@ -52,11 +53,13 @@ function ActivationLoginPrompt({ qrId, loggedInAsWrongRole }) {
 }
 
 const MAX_GALLERY_PHOTOS = 5;
+const CUSTOM_TYPE_VALUE = "__custom__";
 
 function ActivationForm({ qrId }) {
   const [activated, setActivated] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("business");
+  const [isCustomType, setIsCustomType] = useState(false);
   const [city, setCity] = useState("");
   const [reviewUrl, setReviewUrl] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -112,6 +115,10 @@ function ActivationForm({ qrId }) {
     }
     if (!reviewUrl.trim()) {
       setError("Google Review URL is required");
+      return;
+    }
+    if (isCustomType && !businessType.trim()) {
+      setError("Enter a business type or pick one from the list");
       return;
     }
 
@@ -211,19 +218,35 @@ function ActivationForm({ qrId }) {
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">Business Type</label>
                 <select
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
+                  value={isCustomType ? CUSTOM_TYPE_VALUE : businessType}
+                  onChange={(e) => {
+                    if (e.target.value === CUSTOM_TYPE_VALUE) {
+                      setIsCustomType(true);
+                      setBusinessType("");
+                    } else {
+                      setIsCustomType(false);
+                      setBusinessType(e.target.value);
+                    }
+                  }}
                   className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-white"
                 >
-                  <option value="restaurant">Restaurant / Food</option>
-                  <option value="salon">Salon / Spa</option>
-                  <option value="hotel">Hotel / Stay</option>
-                  <option value="clinic">Clinic / Hospital</option>
-                  <option value="shop">Retail Shop</option>
-                  <option value="gym">Gym / Fitness</option>
-                  <option value="service">Service Provider</option>
-                  <option value="business">Other Business</option>
+                  {BUSINESS_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_TYPE_VALUE}>+ Add custom type...</option>
                 </select>
+                {isCustomType && (
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Enter business type"
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60 mt-2"
+                  />
+                )}
               </div>
 
               <div>

@@ -1,0 +1,27 @@
+// Shared business category list used by the QR activation form and the
+// admin "Add Client" form, so both dropdowns always stay in sync.
+export const BUSINESS_TYPES = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "cafe", label: "Cafe" },
+  { value: "bakery", label: "Bakery" },
+  { value: "bar", label: "Bar / Pub" },
+  { value: "food", label: "Food & Beverage" },
+  { value: "salon", label: "Salon" },
+  { value: "spa", label: "Spa" },
+  { value: "hotel", label: "Hotel" },
+  { value: "resort", label: "Resort / Stay" },
+  { value: "clinic", label: "Clinic" },
+  { value: "hospital", label: "Hospital" },
+  { value: "dentist", label: "Dentist" },
+  { value: "pharmacy", label: "Pharmacy" },
+  { value: "shop", label: "Retail Shop" },
+  { value: "supermarket", label: "Supermarket / Grocery" },
+  { value: "electronics", label: "Electronics Store" },
+  { value: "automobile", label: "Automobile / Garage" },
+  { value: "real_estate", label: "Real Estate" },
+  { value: "education", label: "Education / Coaching" },
+  { value: "gym", label: "Gym" },
+  { value: "fitness", label: "Fitness Studio" },
+  { value: "service", label: "Service Provider" },
+  { value: "business", label: "Other Business" },
+];
