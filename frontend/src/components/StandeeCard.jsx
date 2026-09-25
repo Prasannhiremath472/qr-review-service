@@ -7,18 +7,34 @@ import { useEffect, useRef, useState } from "react";
 // into that image and drawn as-is; only the logo, name, tagline, and QR
 // are dynamic, overlaid at these exact spots.
 const TEMPLATE_URL = "/standdee.jpeg";
-const CARD_WIDTH = 1066;
-const CARD_HEIGHT = 1600;
+const TEMPLATE_WIDTH = 1066;
+const TEMPLATE_HEIGHT = 1600;
+
+// Printed standee target: 4in x 6in at 300 DPI, so it sticks to a standard
+// acrylic desk stand at the right physical size. The template is already a
+// ~2:3 ratio, so this is a straight upscale — coordinates below are scaled
+// by the same factor so the overlay still lines up with the template art.
+const PRINT_DPI = 300;
+const CARD_WIDTH = 4 * PRINT_DPI;
+const CARD_HEIGHT = 6 * PRINT_DPI;
+const SCALE_X = CARD_WIDTH / TEMPLATE_WIDTH;
+const SCALE_Y = CARD_HEIGHT / TEMPLATE_HEIGHT;
+
 const NAVY = "#0f1e3c";
 
-const LOGO_CENTER_X = 533;
-const LOGO_CENTER_Y = 130;
-const LOGO_RADIUS = 88;
+const LOGO_CENTER_X = 533 * SCALE_X;
+const LOGO_CENTER_Y = 130 * SCALE_Y;
+const LOGO_RADIUS = 88 * SCALE_Y;
 
-const NAME_CENTER_Y = 248;
-const TAGLINE_CENTER_Y = 296;
+const NAME_CENTER_Y = 248 * SCALE_Y;
+const TAGLINE_CENTER_Y = 296 * SCALE_Y;
 
-const QR_BOX = { x: 339, y: 607, w: 365, h: 342 };
+const QR_BOX = {
+  x: 339 * SCALE_X,
+  y: 607 * SCALE_Y,
+  w: 365 * SCALE_X,
+  h: 342 * SCALE_Y,
+};
 
 function loadImage(src, crossOrigin) {
   return new Promise((resolve, reject) => {
@@ -66,31 +82,42 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
 
   // Business name — clear just the placeholder text's own patch (well
   // clear of the corner swooshes, which only reach the outer ~230px).
-  const NAME_PATCH_W = 620;
+  const NAME_PATCH_W = 620 * SCALE_X;
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(CARD_WIDTH / 2 - NAME_PATCH_W / 2, NAME_CENTER_Y - 30, NAME_PATCH_W, 60);
+  ctx.fillRect(CARD_WIDTH / 2 - NAME_PATCH_W / 2, NAME_CENTER_Y - 30 * SCALE_Y, NAME_PATCH_W, 60 * SCALE_Y);
   ctx.fillStyle = NAVY;
-  ctx.font = "bold 46px Arial";
+  ctx.font = `bold ${46 * SCALE_Y}px Arial`;
   ctx.textAlign = "center";
-  ctx.fillText((businessName || "Business Name").toUpperCase(), CARD_WIDTH / 2, NAME_CENTER_Y + 15, NAME_PATCH_W - 20);
+  ctx.fillText(
+    (businessName || "Business Name").toUpperCase(),
+    CARD_WIDTH / 2,
+    NAME_CENTER_Y + 15 * SCALE_Y,
+    NAME_PATCH_W - 20 * SCALE_X
+  );
 
   // Tagline
-  const TAGLINE_PATCH_W = 480;
+  const TAGLINE_PATCH_W = 480 * SCALE_X;
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(CARD_WIDTH / 2 - TAGLINE_PATCH_W / 2, TAGLINE_CENTER_Y - 15, TAGLINE_PATCH_W, 30);
+  ctx.fillRect(CARD_WIDTH / 2 - TAGLINE_PATCH_W / 2, TAGLINE_CENTER_Y - 15 * SCALE_Y, TAGLINE_PATCH_W, 30 * SCALE_Y);
   ctx.fillStyle = "#71717a";
-  ctx.font = "600 17px Arial";
-  ctx.fillText((tagline || "Your Tagline Here").toUpperCase(), CARD_WIDTH / 2, TAGLINE_CENTER_Y + 6, TAGLINE_PATCH_W - 20);
+  ctx.font = `600 ${17 * SCALE_Y}px Arial`;
+  ctx.fillText(
+    (tagline || "Your Tagline Here").toUpperCase(),
+    CARD_WIDTH / 2,
+    TAGLINE_CENTER_Y + 6 * SCALE_Y,
+    TAGLINE_PATCH_W - 20 * SCALE_X
+  );
 
   // QR code, inset within the template's colored frame
   if (qrImageUrl) {
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
-      const pad = 24;
-      ctx.drawImage(qr, QR_BOX.x + pad, QR_BOX.y + pad, QR_BOX.w - pad * 2, QR_BOX.h - pad * 2);
+      const padX = 24 * SCALE_X;
+      const padY = 24 * SCALE_Y;
+      ctx.drawImage(qr, QR_BOX.x + padX, QR_BOX.y + padY, QR_BOX.w - padX * 2, QR_BOX.h - padY * 2);
     } catch (err) {
       ctx.fillStyle = "#9ca3af";
-      ctx.font = "20px Arial";
+      ctx.font = `${20 * SCALE_Y}px Arial`;
       ctx.fillText("QR CODE", QR_BOX.x + QR_BOX.w / 2, QR_BOX.y + QR_BOX.h / 2);
     }
   }
@@ -143,6 +170,7 @@ export default function StandeeCard({ businessName, tagline, logoUrl, qrImageUrl
         </svg>
         {ready ? "Download Standee" : "Rendering..."}
       </button>
+      <p className="text-[11px] text-zinc-400 -mt-1.5">Prints at 4&quot; x 6&quot; (300 DPI)</p>
     </div>
   );
 }
