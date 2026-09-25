@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { uploadShopPhoto } from "../api/client.js";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
+import { resolveReviewUrl } from "../lib/googleReview.js";
 
 const MAX_GALLERY_PHOTOS = 5;
 const CUSTOM_TYPE_VALUE = "__custom__";
@@ -102,7 +103,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
         name: businessName.trim(),
         business_type: businessType,
         city: city.trim(),
-        review_url: reviewUrl.trim(),
+        review_url: resolveReviewUrl(reviewUrl),
         owner_name: ownerName.trim(),
         about_us: aboutUs.trim(),
         open_hours: openHours.trim(),
@@ -197,14 +198,26 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 mb-1.5">Google Review URL *</label>
+        <label className="block text-sm font-medium text-zinc-700 mb-1.5">Google Review URL or Place ID *</label>
         <input
-          type="url"
-          placeholder="https://g.page/r/XXXXX/review"
+          type="text"
+          placeholder="Paste full URL, or just the Place ID (e.g. ChIJrTLr-GyuEmsRBfy61i59si0)"
           value={reviewUrl}
           onChange={(e) => setReviewUrl(e.target.value)}
           className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
         />
+        <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed">
+          Find the Place ID via{" "}
+          <a
+            href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+            target="_blank"
+            rel="noreferrer"
+            className="text-violet-600 hover:underline"
+          >
+            Google's Place ID Finder
+          </a>{" "}
+          and paste it directly — no need to build the full link.
+        </p>
       </div>
 
       <div className="pt-2 border-t border-zinc-100">
