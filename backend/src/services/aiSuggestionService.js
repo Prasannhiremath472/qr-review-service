@@ -30,15 +30,28 @@ const LENGTHS = [
 
 const FALLBACK_TIMEOUT_MS = 60000;
 
-function buildSystemPrompt(businessName, city, serviceTaken) {
+// Splits whatever the customer typed into the "which service did you take?"
+// field into individual keywords/phrases (comma, "and", "&", or slash
+// separated), so the prompt can point the model at each one explicitly
+// instead of just repeating the raw freeform string back at it.
+function extractServiceKeywords(serviceTaken) {
+  if (!serviceTaken) return [];
+  return serviceTaken
+    .split(/,|&|\/|\band\b/gi)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function buildSystemPrompt(businessName, city, serviceKeywords) {
   const now = Date.now();
   const persona = PERSONAS[Math.floor((now / 1000) % PERSONAS.length)];
   const tone = TONES[Math.floor((now / 1000) % TONES.length)];
   const length = LENGTHS[Math.floor((now / 1000) % LENGTHS.length)];
 
-  const serviceLine = serviceTaken
-    ? `- The customer came in for "${serviceTaken}" — reference this specific service naturally instead of inventing a different detail`
-    : `- Include ONE specific detail (a menu item, a feature, staff interaction, or atmosphere detail) — make it up but keep it realistic for this type of business`;
+  const serviceLine =
+    serviceKeywords.length > 0
+      ? `- The customer came in specifically for: ${serviceKeywords.map((k) => `"${k}"`).join(", ")} — build the review AROUND this. Mention it using the customer's own words (or a very close natural paraphrase), and describe how that specific service went. Do not invent an unrelated service or detail instead.`
+      : `- Include ONE specific detail (a menu item, a feature, staff interaction, or atmosphere detail) — make it up but keep it realistic for this type of business`;
 
   return `You write Google Reviews as if you are a REAL customer. Each review must be completely unique and different from any review you have ever written.
 
@@ -60,13 +73,17 @@ ${serviceLine}
 - Vary punctuation: some reviews use periods only, some use a dash or ellipsis naturally`;
 }
 
-function buildUserPrompt(businessName, businessType, city, rating, serviceTaken) {
+function buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords) {
   const seed = Date.now() % 100000;
+  const serviceBlock =
+    serviceKeywords.length > 0
+      ? `Service(s) taken (customer's own words): ${serviceTaken}\nKeywords to build the review around: ${serviceKeywords.join(", ")}\n`
+      : "";
   return `Business: ${businessName}
 Type: ${businessType}
 City: ${city}
 Rating: ${rating}/5 stars
-${serviceTaken ? `Service taken: ${serviceTaken}\n` : ""}Random seed: ${seed}
+${serviceBlock}Random seed: ${seed}
 
 Write a unique Google Review that sounds like a real person typed it on their phone. Make it different from any standard review template.`;
 }
@@ -125,26 +142,40 @@ async function callGemini(systemPrompt, userPrompt, temperature, maxTokens) {
   return parts[0].text;
 }
 
-function generateFallback(businessName, businessType, city, rating) {
-  const fallbacks = [
+function generateFallback(businessName, businessType, city, rating, serviceKeywords) {
+  const service = serviceKeywords[0] || "";
+
+  const fallbacksWithService = [
+    `Stopped by ${businessName} for ${service} the other day and it was a really solid experience. Friendly staff and the vibe was just right. Pretty happy with the ${service} here in ${city}.`,
+    `Finally got my ${service} done at ${businessName} in ${city} - glad we did. Everything was well put together and the service felt genuine, not rushed.`,
+    `Went in for ${service} at ${businessName} not expecting much but left pleasantly surprised. Good ${businessType} with a nice atmosphere. Worth a visit if you're around ${city}.`,
+    `Came here for ${service} with a couple friends and we all agreed ${businessName} is doing things right. Solid experience overall.`,
+    `Really enjoyed my ${service} at ${businessName}. The staff was attentive without being overbearing, and the place had a comfortable feel to it.`,
+  ];
+
+  const fallbacksGeneric = [
     `Stopped by ${businessName} the other day and it was a really solid experience. Friendly staff and the vibe was just right. Pretty happy with our visit to this ${businessType} in ${city}.`,
     `Finally checked out ${businessName} in ${city} - glad we did. Everything was well put together and the service felt genuine, not rushed.`,
     `Walked into ${businessName} not expecting much but left pleasantly surprised. Good ${businessType} with a nice atmosphere. Worth a visit if you're around ${city}.`,
     `Came here with a couple friends and we all agreed ${businessName} is doing things right. Solid ${businessType} experience overall.`,
     `Really enjoyed our time at ${businessName}. The staff was attentive without being overbearing, and the place had a comfortable feel to it.`,
   ];
+
+  const fallbacks = service ? fallbacksWithService : fallbacksGeneric;
   const idx = Date.now() % fallbacks.length;
   return { review: fallbacks[idx] };
 }
 
 // generateSuggestions generates a single ready-to-paste Google Review for a business.
 async function generateSuggestions(businessName, businessType, city, rating, serviceTaken) {
+  const serviceKeywords = extractServiceKeywords(serviceTaken);
+
   if (!config.geminiKey) {
-    return generateFallback(businessName, businessType, city, rating);
+    return generateFallback(businessName, businessType, city, rating, serviceKeywords);
   }
 
-  const systemPrompt = buildSystemPrompt(businessName, city, serviceTaken);
-  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, serviceTaken);
+  const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords);
+  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords);
 
   try {
     const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, 300);
@@ -152,7 +183,7 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
     review = applySafetyFilterSingle(review, city);
     return { review };
   } catch (err) {
-    return generateFallback(businessName, businessType, city, rating);
+    return generateFallback(businessName, businessType, city, rating, serviceKeywords);
   }
 }
 
