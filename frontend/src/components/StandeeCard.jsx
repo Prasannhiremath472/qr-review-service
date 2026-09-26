@@ -47,6 +47,16 @@ function loadImage(src, crossOrigin) {
   });
 }
 
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 // drawStandee composites the business logo, name, tagline, and QR code
 // onto the fixed standee template image. Used both for the live in-app
 // preview and for the PNG download.
@@ -108,14 +118,24 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
     TAGLINE_PATCH_W - 20 * SCALE_X
   );
 
-  // QR code, inset within the template's colored frame — small pad so the
-  // QR's own quiet zone doesn't touch the border, but fills the frame.
+  // QR code, inset within the template's colored frame — enough pad that
+  // the colored border stays fully visible on every side, with its own
+  // corners rounded to match the frame.
   if (qrImageUrl) {
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
-      const padX = 6 * SCALE_X;
-      const padY = 6 * SCALE_Y;
-      ctx.drawImage(qr, QR_BOX.x + padX, QR_BOX.y + padY, QR_BOX.w - padX * 2, QR_BOX.h - padY * 2);
+      const padX = 16 * SCALE_X;
+      const padY = 16 * SCALE_Y;
+      const qx = QR_BOX.x + padX;
+      const qy = QR_BOX.y + padY;
+      const qw = QR_BOX.w - padX * 2;
+      const qh = QR_BOX.h - padY * 2;
+      const qrRadius = 18 * SCALE_X;
+      ctx.save();
+      roundRectPath(ctx, qx, qy, qw, qh, qrRadius);
+      ctx.clip();
+      ctx.drawImage(qr, qx, qy, qw, qh);
+      ctx.restore();
     } catch (err) {
       ctx.fillStyle = "#9ca3af";
       ctx.font = `${20 * SCALE_Y}px Arial`;
