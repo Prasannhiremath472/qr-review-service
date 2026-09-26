@@ -78,9 +78,9 @@ export default function ReviewPage() {
   return <ReviewFlow shopInfo={shopInfo} qrId={qrId} />;
 }
 
-const TYPING_CHARS_PER_TICK = 3;
-const TYPING_TICK_MS = 18;
-const SERVICE_DEBOUNCE_MS = 800;
+const TYPING_CHARS_PER_TICK = 2;
+const TYPING_TICK_MS = 28;
+const SERVICE_DEBOUNCE_MS = 1000;
 
 function ReviewFlow({ shopInfo, qrId }) {
   const [customerName, setCustomerName] = useState("");
