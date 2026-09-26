@@ -14,11 +14,29 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-      const { ok, data } = await getMe();
-      if (ok && data.success) {
-        setUser(data.data);
-      } else {
-        clearToken();
+
+      // Retry a couple of times on network failure — a dev-server restart
+      // or brief backend blip shouldn't bounce a valid session to the
+      // login page; only a genuine 401 should.
+      const MAX_ATTEMPTS = 3;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const { ok, status, data } = await getMe();
+          if (ok && data.success) {
+            setUser(data.data);
+            break;
+          }
+          if (status === 401) {
+            clearToken();
+            break;
+          }
+          // Non-401 failure (5xx, malformed response) — fall through to retry.
+        } catch (err) {
+          // Network error (backend unreachable) — fall through to retry.
+        }
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        }
       }
       setLoading(false);
     }
