@@ -124,8 +124,8 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
   if (qrImageUrl) {
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
-      const padX = 16 * SCALE_X;
-      const padY = 16 * SCALE_Y;
+      const padX = 10 * SCALE_X;
+      const padY = 10 * SCALE_Y;
       const qx = QR_BOX.x + padX;
       const qy = QR_BOX.y + padY;
       const qw = QR_BOX.w - padX * 2;
