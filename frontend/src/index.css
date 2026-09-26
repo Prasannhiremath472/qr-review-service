@@ -156,6 +156,17 @@ a {
   }
 }
 
+.typing-cursor {
+  display: inline-block;
+  color: var(--brand-600, #6d28d9);
+  animation: typingBlink 0.85s step-start infinite;
+}
+@keyframes typingBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* ---------- Buttons ---------- */
 
 .btn-gradient {

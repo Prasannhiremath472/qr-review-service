@@ -78,28 +78,59 @@ export default function ReviewPage() {
   return <ReviewFlow shopInfo={shopInfo} qrId={qrId} />;
 }
 
+const TYPING_CHARS_PER_TICK = 3;
+const TYPING_TICK_MS = 18;
+const SERVICE_DEBOUNCE_MS = 800;
+
 function ReviewFlow({ shopInfo, qrId }) {
   const [customerName, setCustomerName] = useState("");
   const [serviceTaken, setServiceTaken] = useState("");
   const [rating, setRating] = useState(5);
   const [step, setStep] = useState("review"); // review | negative | thankyou
   const [reviewText, setReviewText] = useState("");
+  const [typedText, setTypedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [continuing, setContinuing] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const fetchedOnce = useRef(false);
+  const serviceDebounceRef = useRef(null);
+  const typingIntervalRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (rating >= 4 && !fetchedOnce.current) {
       fetchedOnce.current = true;
       fetchSuggestion();
     }
+    return () => {
+      clearTimeout(serviceDebounceRef.current);
+      clearInterval(typingIntervalRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function fetchSuggestion() {
+  // Plays the given text into `typedText` a few characters at a time, so the
+  // customer sees the AI "writing" the review instead of it popping in.
+  function playTypingAnimation(text) {
+    clearInterval(typingIntervalRef.current);
+    setTypedText("");
+    setIsTyping(true);
+    let i = 0;
+    typingIntervalRef.current = setInterval(() => {
+      i += TYPING_CHARS_PER_TICK;
+      setTypedText(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(typingIntervalRef.current);
+        setIsTyping(false);
+      }
+    }, TYPING_TICK_MS);
+  }
+
+  async function fetchSuggestion(serviceOverride) {
+    const requestId = ++requestIdRef.current;
     setSuggestionLoading(true);
     try {
       const { data } = await getReviewSuggestion({
@@ -107,17 +138,22 @@ function ReviewFlow({ shopInfo, qrId }) {
         business_type: shopInfo.business_type || "business",
         city: shopInfo.city || "your city",
         rating,
-        service_taken: serviceTaken.trim(),
+        service_taken: (serviceOverride ?? serviceTaken).trim(),
       });
-      if (data.success && data.data && data.data.review) {
-        setReviewText(data.data.review);
-      } else {
-        setReviewText("Had a wonderful experience! Great service and would definitely recommend.");
-      }
-    } catch (err) {
-      setReviewText("Had a wonderful experience! Great service and would definitely recommend.");
-    } finally {
+      if (requestId !== requestIdRef.current) return; // a newer request superseded this one
+      const text =
+        data.success && data.data && data.data.review
+          ? data.data.review
+          : "Had a wonderful experience! Great service and would definitely recommend.";
+      setReviewText(text);
       setSuggestionLoading(false);
+      playTypingAnimation(text);
+    } catch (err) {
+      if (requestId !== requestIdRef.current) return;
+      const text = "Had a wonderful experience! Great service and would definitely recommend.";
+      setReviewText(text);
+      setSuggestionLoading(false);
+      playTypingAnimation(text);
     }
   }
 
@@ -132,6 +168,20 @@ function ReviewFlow({ shopInfo, qrId }) {
     } else {
       setStep("negative");
     }
+  }
+
+  // Regenerates the AI review a moment after the customer stops typing the
+  // service they took, using its keywords to make the review more specific.
+  function handleServiceChange(value) {
+    setServiceTaken(value);
+    if (rating < 4) return;
+    clearTimeout(serviceDebounceRef.current);
+    serviceDebounceRef.current = setTimeout(() => {
+      if (value.trim()) {
+        fetchedOnce.current = true;
+        fetchSuggestion(value);
+      }
+    }, SERVICE_DEBOUNCE_MS);
   }
 
   function copyReview() {
@@ -230,7 +280,7 @@ function ReviewFlow({ shopInfo, qrId }) {
                   type="text"
                   placeholder="e.g. Haircut, Facial, Dine-in"
                   value={serviceTaken}
-                  onChange={(e) => setServiceTaken(e.target.value)}
+                  onChange={(e) => handleServiceChange(e.target.value)}
                   className="field-input w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
                 />
               </div>
@@ -280,10 +330,20 @@ function ReviewFlow({ shopInfo, qrId }) {
                     <div className="slide-up mb-4">
                       <div className="review-card rounded-2xl p-4 relative">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide">Your Review</span>
+                          <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide flex items-center gap-1.5">
+                            {isTyping && (
+                              <span className="flex gap-0.5">
+                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-500 rounded-full inline-block"></span>
+                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-400 rounded-full inline-block" style={{ animationDelay: "0.2s" }}></span>
+                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-300 rounded-full inline-block" style={{ animationDelay: "0.4s" }}></span>
+                              </span>
+                            )}
+                            {isTyping ? "AI is writing..." : "Your Review"}
+                          </span>
                           <button
                             onClick={copyReview}
-                            className="btn-ghost flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 px-2 py-1 rounded-lg hover:bg-violet-100"
+                            disabled={isTyping}
+                            className="btn-ghost flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 px-2 py-1 rounded-lg hover:bg-violet-100 disabled:opacity-40"
                           >
                             {copied ? (
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,20 +357,18 @@ function ReviewFlow({ shopInfo, qrId }) {
                             <span>{copied ? "Copied!" : "Copy"}</span>
                           </button>
                         </div>
-                        <textarea
-                          rows={5}
-                          readOnly
-                          value={reviewText}
-                          className="w-full bg-transparent text-[15px] text-zinc-700 leading-relaxed resize-none border-0 focus:ring-0 p-0"
-                        />
+                        <p className="w-full text-[15px] text-zinc-700 leading-relaxed whitespace-pre-wrap min-h-[7.5rem]">
+                          {typedText}
+                          {isTyping && <span className="typing-cursor">|</span>}
+                        </p>
                       </div>
                     </div>
 
                     <div className="slide-up">
                       <button
                         onClick={copyAndContinue}
-                        disabled={continuing}
-                        className="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2"
+                        disabled={continuing || isTyping}
+                        className="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-60"
                       >
                         {continuing ? (
                           <>
