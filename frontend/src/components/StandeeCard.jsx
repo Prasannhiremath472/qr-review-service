@@ -126,11 +126,12 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
       const padX = 4 * SCALE_X;
-      const padY = 4 * SCALE_Y;
+      const padTop = 14 * SCALE_Y;
+      const padBottom = 4 * SCALE_Y;
       const qx = QR_BOX.x + padX;
-      const qy = QR_BOX.y + padY;
+      const qy = QR_BOX.y + padTop;
       const qw = QR_BOX.w - padX * 2;
-      const qh = QR_BOX.h - padY * 2;
+      const qh = QR_BOX.h - padTop - padBottom;
       const qrRadius = 18 * SCALE_X;
       ctx.save();
       roundRectPath(ctx, qx, qy, qw, qh, qrRadius);
