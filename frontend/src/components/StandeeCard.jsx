@@ -108,12 +108,13 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
     TAGLINE_PATCH_W - 20 * SCALE_X
   );
 
-  // QR code, inset within the template's colored frame
+  // QR code, inset within the template's colored frame — small pad so the
+  // QR's own quiet zone doesn't touch the border, but fills the frame.
   if (qrImageUrl) {
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
-      const padX = 24 * SCALE_X;
-      const padY = 24 * SCALE_Y;
+      const padX = 6 * SCALE_X;
+      const padY = 6 * SCALE_Y;
       ctx.drawImage(qr, QR_BOX.x + padX, QR_BOX.y + padY, QR_BOX.w - padX * 2, QR_BOX.h - padY * 2);
     } catch (err) {
       ctx.fillStyle = "#9ca3af";
