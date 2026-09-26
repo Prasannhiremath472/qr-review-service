@@ -68,7 +68,8 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
   const template = await loadImage(TEMPLATE_URL);
   ctx.drawImage(template, 0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Logo — clipped to the circle already drawn on the template
+  // Logo — clipped to a circle. Paints over the template's gray "YOUR LOGO
+  // HERE" ring first so a real logo shows with no border around it.
   if (logoUrl) {
     try {
       const logo = await loadImage(logoUrl, "anonymous");
@@ -78,7 +79,7 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
       const h = logo.height * scale;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(LOGO_CENTER_X, LOGO_CENTER_Y, LOGO_RADIUS - 4, 0, Math.PI * 2);
+      ctx.arc(LOGO_CENTER_X, LOGO_CENTER_Y, LOGO_RADIUS + 6, 0, Math.PI * 2);
       ctx.clip();
       ctx.fillStyle = "#ffffff";
       ctx.fill();
@@ -124,8 +125,8 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
   if (qrImageUrl) {
     try {
       const qr = await loadImage(qrImageUrl, "anonymous");
-      const padX = 10 * SCALE_X;
-      const padY = 10 * SCALE_Y;
+      const padX = 4 * SCALE_X;
+      const padY = 4 * SCALE_Y;
       const qx = QR_BOX.x + padX;
       const qy = QR_BOX.y + padY;
       const qw = QR_BOX.w - padX * 2;
