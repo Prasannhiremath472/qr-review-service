@@ -68,8 +68,17 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
   const template = await loadImage(TEMPLATE_URL);
   ctx.drawImage(template, 0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Logo — clipped to a circle. Paints over the template's gray "YOUR LOGO
-  // HERE" ring first so a real logo shows with no border around it.
+  // Logo area — always paint over the template's gray "YOUR LOGO HERE"
+  // ring first (whether or not a real logo is set), so no circle border
+  // ever shows; a real logo is then clipped to a circle on top of that.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(LOGO_CENTER_X, LOGO_CENTER_Y, LOGO_RADIUS + 6, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.restore();
+
   if (logoUrl) {
     try {
       const logo = await loadImage(logoUrl, "anonymous");
@@ -81,13 +90,11 @@ async function drawStandee(canvas, { businessName, tagline, logoUrl, qrImageUrl 
       ctx.beginPath();
       ctx.arc(LOGO_CENTER_X, LOGO_CENTER_Y, LOGO_RADIUS + 6, 0, Math.PI * 2);
       ctx.clip();
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
       ctx.drawImage(logo, LOGO_CENTER_X - w / 2, LOGO_CENTER_Y - h / 2, w, h);
       ctx.restore();
     } catch (err) {
-      // no logo provided or it failed to load — leave the template's
-      // "YOUR LOGO HERE" placeholder circle showing through
+      // no logo provided or it failed to load — the area stays a plain
+      // white circle with no border, no placeholder text either
     }
   }
 
