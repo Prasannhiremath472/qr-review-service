@@ -115,6 +115,10 @@ export function listClients({ page = 1, limit = 10 } = {}) {
   return request(`/api/v1/qr-reviews/shops?page=${page}&limit=${limit}`);
 }
 
+export function getShopById(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}`);
+}
+
 export function updateShop(shopId, payload) {
   return request(`/api/v1/qr-reviews/shops/${shopId}`, {
     method: "PATCH",

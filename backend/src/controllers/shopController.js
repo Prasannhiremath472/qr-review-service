@@ -26,7 +26,7 @@ async function create(req, res) {
 async function getById(req, res) {
   try {
     const shop = await shopService.getShopById(req.params.id);
-    res.status(200).json({ success: true, data: shop });
+    res.status(200).json({ success: true, data: shopService.toClientResponse(shop) });
   } catch (err) {
     res.status(404).json({ success: false, message: "Shop not found" });
   }

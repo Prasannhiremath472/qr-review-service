@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getDashboard } from "../api/client.js";
 import StandeeCard from "./StandeeCard.jsx";
+import EditPhotosModal from "./EditPhotosModal.jsx";
 
 // QrCodesModal shows every QR code linked to a shop, rendered as the
 // branded printable standee (logo, name, tagline, QR, phone), opened by
@@ -10,6 +11,7 @@ export default function QrCodesModal({ shopId, shopName, onClose }) {
   const [qrCodes, setQrCodes] = useState(null);
   const [shopMeta, setShopMeta] = useState(null);
   const [error, setError] = useState("");
+  const [editingPhotos, setEditingPhotos] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,15 +61,26 @@ export default function QrCodesModal({ shopId, shopName, onClose }) {
             <h2 className="text-base font-semibold text-zinc-900 truncate">{shopName}</h2>
             <p className="text-xs text-zinc-500">QR codes for this business</p>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-ghost w-8 h-8 flex-shrink-0 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center"
-            aria-label="Close"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setEditingPhotos(true)}
+              className="btn-ghost inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 px-2.5 py-1.5 rounded-lg hover:bg-violet-50"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 16.5V19.5a2.25 2.25 0 002.25 2.25H18.75A2.25 2.25 0 0021 19.5V16.5M4.5 4.5h15A1.5 1.5 0 0121 6v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 15V6a1.5 1.5 0 011.5-1.5z" />
+              </svg>
+              Edit Photos
+            </button>
+            <button
+              onClick={onClose}
+              className="btn-ghost w-8 h-8 flex-shrink-0 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="p-5 overflow-y-auto">
@@ -101,6 +114,16 @@ export default function QrCodesModal({ shopId, shopName, onClose }) {
           )}
         </div>
       </div>
+
+      {editingPhotos && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <EditPhotosModal
+            shopId={shopId}
+            shopName={shopName}
+            onClose={() => setEditingPhotos(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
