@@ -8,26 +8,34 @@ const MAX_GALLERY_PHOTOS = 5;
 const CUSTOM_TYPE_VALUE = "__custom__";
 
 // ClientForm collects the same business profile fields used during QR
-// activation. Used by the admin "Add Client" flow, which creates a shop
-// directly (a QR code can be generated/linked to it separately afterward).
-export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
-  const [businessName, setBusinessName] = useState("");
-  const [businessType, setBusinessType] = useState("business");
-  const [isCustomType, setIsCustomType] = useState(false);
-  const [city, setCity] = useState("");
-  const [reviewUrl, setReviewUrl] = useState(REVIEW_URL_PREFIX);
-  const [ownerName, setOwnerName] = useState("");
-  const [tagline, setTagline] = useState("");
-  const [aboutUs, setAboutUs] = useState("");
-  const [openHours, setOpenHours] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [address, setAddress] = useState("");
+// activation. Used by the admin/salesman "Add Client" flow (creates a shop
+// directly; a QR code can be generated/linked to it separately afterward)
+// and by the "Edit Client" page (pre-filled via `initialValues`, existing
+// photo/logo/gallery URLs kept unless replaced with a new upload).
+export default function ClientForm({ onSubmit, submitLabel = "Add Client", initialValues = null }) {
+  const iv = initialValues || {};
+  const [businessName, setBusinessName] = useState(iv.name || "");
+  const [businessType, setBusinessType] = useState(iv.business_type || "business");
+  const [isCustomType, setIsCustomType] = useState(
+    Boolean(iv.business_type) && !BUSINESS_TYPES.some((t) => t.value === iv.business_type)
+  );
+  const [city, setCity] = useState(iv.city || "");
+  const [reviewUrl, setReviewUrl] = useState(iv.review_url || REVIEW_URL_PREFIX);
+  const [ownerName, setOwnerName] = useState(iv.owner_name || "");
+  const [tagline, setTagline] = useState(iv.tagline || "");
+  const [aboutUs, setAboutUs] = useState(iv.about_us || "");
+  const [openHours, setOpenHours] = useState(iv.open_hours || "");
+  const [whatsappNumber, setWhatsappNumber] = useState(iv.whatsapp_number || "");
+  const [contactPhone, setContactPhone] = useState(iv.contact_phone || "");
+  const [contactEmail, setContactEmail] = useState(iv.contact_email || "");
+  const [address, setAddress] = useState(iv.address || "");
   const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState("");
+  const [logoPreview, setLogoPreview] = useState(iv.logo_url || "");
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoPreview, setPhotoPreview] = useState(iv.photo_url || "");
+  const [existingGalleryUrls, setExistingGalleryUrls] = useState(
+    Array.isArray(iv.gallery_photos) ? iv.gallery_photos : []
+  );
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -50,11 +58,17 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
   function handleGalleryChange(e) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    const combined = [...galleryFiles, ...files].slice(0, MAX_GALLERY_PHOTOS);
+    const remaining = MAX_GALLERY_PHOTOS - existingGalleryUrls.length - galleryFiles.length;
+    const accepted = files.slice(0, Math.max(remaining, 0));
+    const combined = [...galleryFiles, ...accepted];
     setGalleryFiles(
       combined.map((f) => (f.preview ? f : Object.assign(f, { preview: URL.createObjectURL(f) })))
     );
     e.target.value = "";
+  }
+
+  function removeExistingGalleryUrl(index) {
+    setExistingGalleryUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
   function removeGalleryFile(index) {
@@ -79,21 +93,21 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
 
     setSubmitting(true);
     try {
-      let logoUrl = "";
+      let logoUrl = iv.logo_url || "";
       if (logoFile) {
         setUploadStatus("Uploading logo...");
         const { data: uploadData } = await uploadShopPhoto(logoFile, "logo");
         if (uploadData.success) logoUrl = uploadData.data.url;
       }
 
-      let photoUrl = "";
+      let photoUrl = iv.photo_url || "";
       if (photoFile) {
         setUploadStatus("Uploading photo...");
         const { data: uploadData } = await uploadShopPhoto(photoFile);
         if (uploadData.success) photoUrl = uploadData.data.url;
       }
 
-      const galleryUrls = [];
+      const galleryUrls = [...existingGalleryUrls];
       for (let i = 0; i < galleryFiles.length; i++) {
         setUploadStatus(`Uploading gallery photo ${i + 1} of ${galleryFiles.length}...`);
         const { data: uploadData } = await uploadShopPhoto(galleryFiles[i]);
@@ -278,9 +292,9 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-          Gallery Photos ({galleryFiles.length}/{MAX_GALLERY_PHOTOS})
+          Gallery Photos ({existingGalleryUrls.length + galleryFiles.length}/{MAX_GALLERY_PHOTOS})
         </label>
-        {galleryFiles.length < MAX_GALLERY_PHOTOS && (
+        {existingGalleryUrls.length + galleryFiles.length < MAX_GALLERY_PHOTOS && (
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -289,11 +303,24 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client" }) {
             className="field-input w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50/60 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-violet-100 file:text-violet-700 file:text-xs file:font-medium"
           />
         )}
-        {galleryFiles.length > 0 && (
+        {(existingGalleryUrls.length > 0 || galleryFiles.length > 0) && (
           <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mt-2">
+            {existingGalleryUrls.map((url, i) => (
+              <div key={`existing-${i}`} className="relative">
+                <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-16 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => removeExistingGalleryUrl(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-zinc-800 text-white rounded-full flex items-center justify-center text-xs"
+                  aria-label="Remove"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
             {galleryFiles.map((file, i) => (
-              <div key={i} className="relative">
-                <img src={file.preview} alt={`Gallery ${i + 1}`} className="w-full h-16 object-cover rounded-lg" />
+              <div key={`new-${i}`} className="relative">
+                <img src={file.preview} alt={`New gallery ${i + 1}`} className="w-full h-16 object-cover rounded-lg" />
                 <button
                   type="button"
                   onClick={() => removeGalleryFile(i)}

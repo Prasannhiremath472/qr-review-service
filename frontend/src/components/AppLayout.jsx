@@ -55,11 +55,29 @@ export const NAV_CONFIG = {
       children: [{ to: "/admin/qr-codes", label: "All QR Codes", end: true }],
     },
     { to: "/admin/analytics", label: "Analytics", icon: "analytics" },
-    { to: "/admin/subscription", label: "Subscription", icon: "subscription" },
+    {
+      label: "Subscription",
+      icon: "subscription",
+      match: "/admin/subscription",
+      children: [
+        { to: "/admin/subscription", label: "Client Subscriptions", end: true },
+        { to: "/admin/plans", label: "Plans & Pricing" },
+      ],
+    },
+    { to: "/admin/accounts", label: "Accounts", icon: "accounts" },
     { to: "/admin/settings", label: "Settings", icon: "settings" },
   ],
   SALESMAN: [
     { to: "/salesman", label: "Dashboard", end: true, icon: "dashboard" },
+    {
+      label: "Clients",
+      icon: "clients",
+      match: "/salesman/clients",
+      children: [
+        { to: "/salesman/clients", label: "All Clients", end: true },
+        { to: "/salesman/clients?tab=add", label: "Add Client", matchQuery: "tab=add" },
+      ],
+    },
     { to: "/salesman/qr-codes", label: "QR Codes", icon: "qr" },
     { to: "/salesman/accounts", label: "Accounts", icon: "accounts" },
     { to: "/salesman/settings", label: "Settings", icon: "settings" },
@@ -250,7 +268,9 @@ function OwnerHeaderRight() {
 }
 
 function NavGroup({ item, location, onNavigate }) {
-  const groupActive = location.pathname.startsWith(item.match || "");
+  const groupActive =
+    location.pathname.startsWith(item.match || "") ||
+    item.children.some((child) => location.pathname === child.to.split("?")[0]);
   const [open, setOpen] = useState(groupActive);
 
   useEffect(() => {

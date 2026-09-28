@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getDashboard } from "../api/client.js";
+import { useAuth } from "../auth/AuthContext.jsx";
 import StandeeCard from "./StandeeCard.jsx";
-import EditPhotosModal from "./EditPhotosModal.jsx";
+
+const EDIT_PATH_BY_ROLE = {
+  ADMIN: (shopId) => `/admin/clients/${shopId}/edit`,
+  SALESMAN: (shopId) => `/salesman/clients/${shopId}/edit`,
+};
 
 // QrCodesModal shows every QR code linked to a shop, rendered as the
 // branded printable standee (logo, name, tagline, QR, phone), opened by
 // clicking a business name in a QR codes table instead of navigating away
 // to the full shop dashboard page.
 export default function QrCodesModal({ shopId, shopName, onClose }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [qrCodes, setQrCodes] = useState(null);
   const [shopMeta, setShopMeta] = useState(null);
   const [error, setError] = useState("");
-  const [editingPhotos, setEditingPhotos] = useState(false);
+
+  const editPath = EDIT_PATH_BY_ROLE[user?.role]?.(shopId);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,15 +71,17 @@ export default function QrCodesModal({ shopId, shopName, onClose }) {
             <p className="text-xs text-zinc-500">QR codes for this business</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => setEditingPhotos(true)}
-              className="btn-ghost inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 px-2.5 py-1.5 rounded-lg hover:bg-violet-50"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 16.5V19.5a2.25 2.25 0 002.25 2.25H18.75A2.25 2.25 0 0021 19.5V16.5M4.5 4.5h15A1.5 1.5 0 0121 6v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 15V6a1.5 1.5 0 011.5-1.5z" />
-              </svg>
-              Edit Photos
-            </button>
+            {editPath && (
+              <button
+                onClick={() => navigate(editPath)}
+                className="btn-ghost inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 px-2.5 py-1.5 rounded-lg hover:bg-violet-50"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+                Edit Details
+              </button>
+            )}
             <button
               onClick={onClose}
               className="btn-ghost w-8 h-8 flex-shrink-0 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center"
@@ -114,16 +125,6 @@ export default function QrCodesModal({ shopId, shopName, onClose }) {
           )}
         </div>
       </div>
-
-      {editingPhotos && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <EditPhotosModal
-            shopId={shopId}
-            shopName={shopName}
-            onClose={() => setEditingPhotos(false)}
-          />
-        </div>
-      )}
     </div>
   );
 }

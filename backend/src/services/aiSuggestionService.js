@@ -114,11 +114,11 @@ function extractServiceKeywords(serviceTaken) {
     .filter(Boolean);
 }
 
-function buildSystemPrompt(businessName, city, serviceKeywords, lang) {
+function buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality) {
   const now = Date.now();
   const persona = PERSONAS[Math.floor((now / 1000) % PERSONAS.length)];
   const tone = TONES[Math.floor((now / 1000) % TONES.length)];
-  const length = LENGTHS[Math.floor((now / 1000) % LENGTHS.length)];
+  const length = betterQuality ? "Write 3-5 sentences, with more specific, vivid detail than a typical short review." : LENGTHS[Math.floor((now / 1000) % LENGTHS.length)];
 
   const serviceLine =
     serviceKeywords.length > 0
@@ -154,7 +154,11 @@ ${serviceLine}
 - If city is provided, mention "${city}" naturally only if it fits — don't force it
 - Small imperfections make reviews real: it's okay to mention one minor thing or use informal grammar
 - Do NOT use more than one exclamation mark in the entire review
-- Vary punctuation: some reviews use periods only, some use a dash or ellipsis naturally`;
+- Vary punctuation: some reviews use periods only, some use a dash or ellipsis naturally${
+    betterQuality
+      ? "\n- Add extra specific, sensory detail (what it looked/felt/tasted/sounded like) so the review reads as higher quality and more convincing than a generic one-liner."
+      : ""
+  }`;
 }
 
 function buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords, lang) {
@@ -235,8 +239,10 @@ function generateFallback(businessName, businessType, city, rating, serviceKeywo
   return { review };
 }
 
-// generateSuggestions generates a single ready-to-paste Google Review for a business.
-async function generateSuggestions(businessName, businessType, city, rating, serviceTaken, language) {
+// generateSuggestions generates a single ready-to-paste Google Review for a
+// business. `betterQuality` (Pro-plan shops) asks for a more detailed,
+// higher-effort suggestion instead of the default short one.
+async function generateSuggestions(businessName, businessType, city, rating, serviceTaken, language, betterQuality = false) {
   const serviceKeywords = extractServiceKeywords(serviceTaken);
   const lang = resolveLanguage(language);
 
@@ -244,11 +250,11 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
     return generateFallback(businessName, businessType, city, rating, serviceKeywords, lang);
   }
 
-  const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords, lang);
+  const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality);
   const userPrompt = buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords, lang);
 
   try {
-    const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, 300);
+    const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, betterQuality ? 450 : 300);
     let review = rawContent.trim().replace(/^"|"$/g, "");
     // The English-phrase safety filter only matters for English output —
     // running it on Hindi/Marathi text is harmless (nothing will match)

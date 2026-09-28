@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { getMyShopAnalytics } from "../api/client.js";
+import { useOwnerShop } from "../auth/OwnerShopContext.jsx";
 import AppLayout from "../components/AppLayout.jsx";
 import OwnerShopGate from "../components/OwnerShopGate.jsx";
+import SubscriptionPanel from "../components/SubscriptionPanel.jsx";
+import NegativeReviewsPanel from "../components/NegativeReviewsPanel.jsx";
+import MonthlyReportPanel from "../components/MonthlyReportPanel.jsx";
 
 export default function OwnerOverviewPage() {
   return (
@@ -12,6 +16,7 @@ export default function OwnerOverviewPage() {
 }
 
 function Overview({ shop }) {
+  const { refreshShops } = useOwnerShop();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,40 +57,19 @@ function Overview({ shop }) {
         </div>
       )}
 
-      <div className="app-card p-5 sm:p-6 mt-5 fade-in">
-        <h2 className="text-base font-semibold text-zinc-900 mb-3">Subscription</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-zinc-400 text-xs mb-1">Start Date</p>
-            <p className="font-medium text-zinc-800">{formatDate(shop.subscription_start_date)}</p>
-          </div>
-          <div>
-            <p className="text-zinc-400 text-xs mb-1">End Date</p>
-            <p className="font-medium text-zinc-800">{formatDate(shop.subscription_end_date)}</p>
-          </div>
-          <div>
-            <p className="text-zinc-400 text-xs mb-1">Status</p>
-            <span
-              className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-                shop.subscription_status === "SUSPENDED"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-emerald-100 text-emerald-700"
-              }`}
-            >
-              {shop.subscription_status === "SUSPENDED" ? "Suspended" : "Active"}
-            </span>
-          </div>
-        </div>
+      <div className="mt-5">
+        <SubscriptionPanel shop={shop} onRenewed={() => refreshShops({ silent: true })} />
+      </div>
+
+      <div className="mt-5">
+        <NegativeReviewsPanel shopId={shop.id} />
+      </div>
+
+      <div className="mt-5">
+        <MonthlyReportPanel shopId={shop.id} />
       </div>
     </AppLayout>
   );
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 const ICONS = {

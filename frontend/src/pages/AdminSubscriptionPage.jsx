@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { listClients, updateShop } from "../api/client.js";
+import { Link } from "react-router-dom";
+import { listClients, updateShop, listPlans } from "../api/client.js";
 import AppLayout from "../components/AppLayout.jsx";
 import Pagination from "../components/Pagination.jsx";
 
@@ -7,6 +8,7 @@ const PAGE_SIZE = 20;
 
 export default function AdminSubscriptionPage() {
   const [clients, setClients] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 });
@@ -24,6 +26,8 @@ export default function AdminSubscriptionPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
+      const { data: plansData } = await listPlans({ all: true });
+      if (!cancelled && plansData.success) setPlans(plansData.data);
       await refresh(page);
       if (!cancelled) setLoading(false);
     }
@@ -46,6 +50,14 @@ export default function AdminSubscriptionPage() {
 
   return (
     <AppLayout title="Subscription" subtitle="Track subscription period and status per client">
+      <div className="flex justify-end mb-4">
+        <Link
+          to="/admin/plans"
+          className="btn-ghost inline-flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-800 px-3 py-2 rounded-lg hover:bg-violet-50"
+        >
+          Manage Plans &amp; Pricing &rarr;
+        </Link>
+      </div>
       <div className="app-card overflow-hidden fade-in">
         {loading ? (
           <div className="p-6 space-y-3">
@@ -63,6 +75,7 @@ export default function AdminSubscriptionPage() {
                   <th className="px-5 py-3 font-medium">Client</th>
                   <th className="px-5 py-3 font-medium hidden sm:table-cell">Name</th>
                   <th className="px-5 py-3 font-medium hidden sm:table-cell">Category</th>
+                  <th className="px-5 py-3 font-medium">Plan</th>
                   <th className="px-5 py-3 font-medium">Start Date</th>
                   <th className="px-5 py-3 font-medium">End Date</th>
                   <th className="px-5 py-3 font-medium">Status</th>
@@ -74,6 +87,20 @@ export default function AdminSubscriptionPage() {
                     <td className="px-5 py-3 font-medium text-zinc-800">{c.name}</td>
                     <td className="px-5 py-3 text-zinc-600 hidden sm:table-cell">{c.owner_name || "—"}</td>
                     <td className="px-5 py-3 text-zinc-600 capitalize hidden sm:table-cell">{c.business_type}</td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={c.plan_id || ""}
+                        onChange={(e) => patchClient(c.id, { plan_id: e.target.value })}
+                        disabled={savingId === c.id}
+                        className="field-input px-2.5 py-1.5 border border-zinc-200 rounded-lg text-xs bg-zinc-50/60"
+                      >
+                        {plans.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="px-5 py-3">
                       <input
                         type="date"

@@ -17,36 +17,34 @@ export function OwnerShopProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  async function refreshShops({ silent = false } = {}) {
+    if (!silent) setLoading(true);
+    try {
+      const { data } = await getMyShops();
+      if (data.success) {
+        setShops(data.data);
+        setSelectedShopId((prev) => {
+          if (prev && data.data.some((s) => s.id === prev)) return prev;
+          return data.data[0]?.id || "";
+        });
+        setError("");
+      } else {
+        setError(data.message || "Failed to load your shops");
+      }
+    } catch (err) {
+      setError("Failed to load your shops");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (user?.role !== "OWNER") {
       setLoading(false);
       return;
     }
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const { data } = await getMyShops();
-        if (cancelled) return;
-        if (data.success) {
-          setShops(data.data);
-          setSelectedShopId((prev) => {
-            if (prev && data.data.some((s) => s.id === prev)) return prev;
-            return data.data[0]?.id || "";
-          });
-        } else {
-          setError(data.message || "Failed to load your shops");
-        }
-      } catch (err) {
-        if (!cancelled) setError("Failed to load your shops");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
+    refreshShops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
   function selectShop(shopId) {
@@ -57,7 +55,9 @@ export function OwnerShopProvider({ children }) {
   const selectedShop = shops?.find((s) => s.id === selectedShopId) || null;
 
   return (
-    <OwnerShopContext.Provider value={{ shops, selectedShop, selectedShopId, selectShop, loading, error }}>
+    <OwnerShopContext.Provider
+      value={{ shops, selectedShop, selectedShopId, selectShop, loading, error, refreshShops }}
+    >
       {children}
     </OwnerShopContext.Provider>
   );

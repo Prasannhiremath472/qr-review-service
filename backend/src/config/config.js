@@ -38,6 +38,8 @@ const config = {
   jwtSecret: getEnv("JWT_SECRET", ""),
   jwtExpiresIn: getEnv("JWT_EXPIRES_IN", "7d"),
   databaseUrl: buildDatabaseUrl(),
+  razorpayKeyId: getEnv("RAZORPAY_KEY_ID", ""),
+  razorpayKeySecret: getEnv("RAZORPAY_KEY_SECRET", ""),
 };
 
 if (!config.jwtSecret) {

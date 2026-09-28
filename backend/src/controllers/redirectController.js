@@ -1,4 +1,5 @@
 const db = require("../lib/db");
+const { isSubscriptionActive } = require("../services/planGateService");
 
 // resolve handles GET /api/v1/qr-reviews/qr/:qr_id/resolve — the core QR scan
 // endpoint consumed by the React frontend's /r/:qrId route.
@@ -44,6 +45,17 @@ async function resolve(req, res) {
     });
   }
 
+  // Subscription lapsed (suspended, or paid period ended) — the owner
+  // dashboard stays reachable so they can renew, but the public review page
+  // customers see when scanning the QR is paused until they do.
+  if (!isSubscriptionActive(shop)) {
+    return res.status(402).json({
+      success: false,
+      code: "SUBSCRIPTION_INACTIVE",
+      message: "This business's review service is temporarily paused. Please check back later.",
+    });
+  }
+
   // Review page view is distinct from QR scan_count: this fires whenever the
   // customer-facing review page actually renders for this shop.
   db.query("UPDATE shops SET review_views = review_views + 1 WHERE id = ?", [shop.id]).catch((err) =>
@@ -72,6 +84,7 @@ async function resolve(req, res) {
       qr_code_id: qrCode.id,
       photo_url: shop.photo_url || "",
       logo_url: shop.logo_url || "",
+      brand_color: shop.brand_color || "",
       gallery_photos: galleryPhotos,
       about_us: shop.about_us || "",
       open_hours: shop.open_hours || "",

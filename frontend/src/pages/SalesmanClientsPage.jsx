@@ -8,7 +8,10 @@ import QrCodesModal from "../components/QrCodesModal.jsx";
 
 const PAGE_SIZE = 10;
 
-export default function AdminClientsPage() {
+// SalesmanClientsPage mirrors AdminClientsPage: lets a salesman view all
+// onboarded businesses, add a new one, and edit an existing client's full
+// business details.
+export default function SalesmanClientsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") === "add" ? "add" : "all";
@@ -119,7 +122,7 @@ export default function AdminClientsPage() {
                         </td>
                         <td className="px-5 py-3 text-right whitespace-nowrap">
                           <button
-                            onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                            onClick={() => navigate(`/salesman/clients/${c.id}/edit`)}
                             className="text-xs font-medium text-zinc-500 hover:text-violet-700 mr-3"
                           >
                             Edit

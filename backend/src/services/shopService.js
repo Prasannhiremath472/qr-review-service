@@ -15,6 +15,7 @@ const PROFILE_FIELDS = [
   "address",
   "photo_url",
   "logo_url",
+  "brand_color",
 ];
 
 function parseGalleryPhotos(shop) {
@@ -44,6 +45,8 @@ function toClientResponse(shop) {
     photo_url: shop.photo_url || "",
     logo_url: shop.logo_url || "",
     gallery_photos: parseGalleryPhotos(shop),
+    brand_color: shop.brand_color || "",
+    plan_id: shop.plan_id || null,
     subscription_start_date: shop.subscription_start_date,
     subscription_end_date: shop.subscription_end_date,
     subscription_status: shop.subscription_status || "ACTIVE",
@@ -153,6 +156,10 @@ async function updateShop(id, req) {
   if (req.subscription_status !== undefined) {
     sets.push("subscription_status = ?");
     values.push(req.subscription_status === "SUSPENDED" ? "SUSPENDED" : "ACTIVE");
+  }
+  if (req.plan_id !== undefined) {
+    sets.push("plan_id = ?");
+    values.push(req.plan_id || null);
   }
 
   if (sets.length === 0) {

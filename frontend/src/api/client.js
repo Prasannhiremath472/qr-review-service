@@ -138,6 +138,39 @@ export function getShopActivity(shopId) {
   return request(`/api/v1/qr-reviews/shops/${shopId}/activity`);
 }
 
+export function getNegativeReviews(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/negative-reviews`);
+}
+
+export function getMonthlyReport(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/monthly-report`);
+}
+
+export function listPlans({ all = false } = {}) {
+  return request(`/api/v1/qr-reviews/plans${all ? "?all=true" : ""}`);
+}
+
+export function updatePlan(planId, payload) {
+  return request(`/api/v1/qr-reviews/plans/${planId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createPaymentOrder(payload) {
+  return request(`/api/v1/qr-reviews/payments/create-order`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function verifyPayment(payload) {
+  return request(`/api/v1/qr-reviews/payments/verify`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function uploadShopPhoto(file, type = "photo") {
   const token = getToken();
   const headers = {};

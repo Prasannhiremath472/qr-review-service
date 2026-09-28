@@ -7,6 +7,8 @@ const redirectController = require("../controllers/redirectController");
 const aiController = require("../controllers/aiController");
 const authController = require("../controllers/authController");
 const uploadController = require("../controllers/uploadController");
+const planController = require("../controllers/planController");
+const paymentController = require("../controllers/paymentController");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { upload } = require("../middleware/upload");
 
@@ -29,6 +31,8 @@ function setupRoutes(app) {
   api.patch("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.update);
   api.get("/shops/:id/analytics", requireAuth, shopController.myAnalytics);
   api.get("/shops/:shop_id/activity", requireAuth, feedbackController.listActivity);
+  api.get("/shops/:shop_id/negative-reviews", requireAuth, feedbackController.listNegative);
+  api.get("/shops/:shop_id/monthly-report", requireAuth, feedbackController.monthlyReport);
 
   // QR code endpoints
   api.post("/qr", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.create);
@@ -55,6 +59,19 @@ function setupRoutes(app) {
     upload.single("photo"),
     uploadController.uploadPhoto
   );
+
+  // Subscription plans (admin-editable pricing/features)
+  api.get("/plans", requireAuth, planController.listPlans);
+  api.patch("/plans/:id", requireAuth, requireRole("ADMIN"), planController.update);
+
+  // Razorpay payments — owner renews/upgrades their own shop; admin/salesman may also trigger it
+  api.post(
+    "/payments/create-order",
+    requireAuth,
+    requireRole("ADMIN", "SALESMAN", "OWNER"),
+    paymentController.createOrder
+  );
+  api.post("/payments/verify", requireAuth, paymentController.verifyPayment);
 
   app.use("/api/v1/qr-reviews", api);
 

@@ -9,8 +9,11 @@ import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
 import AdminAccountsPage from "./pages/AdminAccountsPage.jsx";
 import AdminQrCodesPage from "./pages/AdminQrCodesPage.jsx";
 import AdminClientsPage from "./pages/AdminClientsPage.jsx";
+import EditClientPage from "./pages/EditClientPage.jsx";
+import SalesmanClientsPage from "./pages/SalesmanClientsPage.jsx";
 import AdminAnalyticsPage from "./pages/AdminAnalyticsPage.jsx";
 import AdminSubscriptionPage from "./pages/AdminSubscriptionPage.jsx";
+import AdminPlansPage from "./pages/AdminPlansPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import SalesmanOverviewPage from "./pages/SalesmanOverviewPage.jsx";
 import SalesmanQrCodesPage from "./pages/SalesmanQrCodesPage.jsx";
@@ -72,6 +75,14 @@ export default function App() {
             }
           />
           <Route
+            path="/admin/clients/:shopId/edit"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <EditClientPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/analytics"
             element={
               <ProtectedRoute roles={["ADMIN"]}>
@@ -84,6 +95,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={["ADMIN"]}>
                 <AdminSubscriptionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/plans"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <AdminPlansPage />
               </ProtectedRoute>
             }
           />
@@ -110,6 +129,22 @@ export default function App() {
             element={
               <ProtectedRoute roles={["SALESMAN"]}>
                 <SalesmanQrCodesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/salesman/clients"
+            element={
+              <ProtectedRoute roles={["SALESMAN"]}>
+                <SalesmanClientsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/salesman/clients/:shopId/edit"
+            element={
+              <ProtectedRoute roles={["SALESMAN"]}>
+                <EditClientPage />
               </ProtectedRoute>
             }
           />

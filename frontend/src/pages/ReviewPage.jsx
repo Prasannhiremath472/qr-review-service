@@ -16,14 +16,20 @@ export default function ReviewPage() {
   const [error, setError] = useState("");
   const [shopInfo, setShopInfo] = useState(null);
 
+  const [paused, setPaused] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const { data } = await resolveQrCode(qrId);
+        const { data, status } = await resolveQrCode(qrId);
         if (cancelled) return;
         if (!data.success) {
-          setError(data.message || "QR code not found.");
+          if (status === 402 && data.code === "SUBSCRIPTION_INACTIVE") {
+            setPaused(true);
+          } else {
+            setError(data.message || "QR code not found.");
+          }
         } else {
           setShopInfo(data.data);
         }
@@ -50,6 +56,24 @@ export default function ReviewPage() {
               <div className="skeleton-block h-10 w-56 mx-auto shimmer" />
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paused) {
+    return (
+      <div className="app-bg min-h-screen flex items-center justify-center p-4">
+        <div className="app-card fade-in max-w-sm w-full text-center px-8 py-10">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+            </svg>
+          </div>
+          <h1 className="text-lg font-semibold text-zinc-900 mb-1.5">Temporarily Unavailable</h1>
+          <p className="text-sm text-zinc-500">
+            This business's review service is temporarily paused. Please check back later.
+          </p>
         </div>
       </div>
     );
@@ -134,6 +158,7 @@ function ReviewFlow({ shopInfo, qrId }) {
     setSuggestionLoading(true);
     try {
       const { data } = await getReviewSuggestion({
+        shop_id: shopInfo.shop_id,
         business_name: shopInfo.shop_name,
         business_type: shopInfo.business_type || "business",
         city: shopInfo.city || "your city",
@@ -233,11 +258,19 @@ function ReviewFlow({ shopInfo, qrId }) {
     ? `https://wa.me/${shopInfo.whatsapp_number.replace(/[^0-9]/g, "")}`
     : "";
 
+  const brandColor = shopInfo.brand_color || "";
+  const brandStyle = brandColor ? { "--brand-color": brandColor } : undefined;
+
   return (
-    <div className="app-bg min-h-screen flex flex-col items-center p-4 py-8 sm:p-6">
+    <div className="app-bg min-h-screen flex flex-col items-center p-4 py-8 sm:p-6" style={brandStyle}>
       <div className="max-w-md w-full">
         <div className="app-card overflow-hidden fade-in">
-          <div className="bg-gradient-to-br from-violet-600 via-violet-600 to-purple-700 px-6 py-6 text-white relative overflow-hidden">
+          <div
+            className={`px-6 py-6 text-white relative overflow-hidden ${
+              brandColor ? "" : "bg-gradient-to-br from-violet-600 via-violet-600 to-purple-700"
+            }`}
+            style={brandColor ? { background: brandColor } : undefined}
+          >
             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
             <div className="absolute -bottom-10 -left-6 w-24 h-24 rounded-full bg-white/10" />
             <div className="flex items-center gap-3.5 relative">
@@ -368,7 +401,10 @@ function ReviewFlow({ shopInfo, qrId }) {
                       <button
                         onClick={copyAndContinue}
                         disabled={continuing || isTyping}
-                        className="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-60"
+                        className={`w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-60 ${
+                          brandColor ? "" : "btn-gradient"
+                        }`}
+                        style={brandColor ? { background: brandColor } : undefined}
                       >
                         {continuing ? (
                           <>
