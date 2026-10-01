@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { bulkCreateQrCodes, listAllQrCodes } from "../api/client.js";
+import { bulkCreateQrCodes, listAllQrCodes, deleteQrCode } from "../api/client.js";
 import AppLayout from "../components/AppLayout.jsx";
 import Pagination from "../components/Pagination.jsx";
 import QrCodesModal from "../components/QrCodesModal.jsx";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -14,6 +15,7 @@ export default function SalesmanQrCodesPage() {
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 });
   const [showForm, setShowForm] = useState(false);
   const [modalShop, setModalShop] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   async function refresh(targetPage = page) {
     const { data } = await listAllQrCodes({ page: targetPage, limit: PAGE_SIZE });
@@ -118,15 +120,21 @@ export default function SalesmanQrCodesPage() {
                         )}
                       </td>
                       <td className="px-5 py-3 text-zinc-600">{qr.scan_count}</td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right whitespace-nowrap">
                         <a
                           href={qr.scan_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs font-medium text-zinc-500 hover:text-violet-700"
+                          className="text-xs font-medium text-zinc-500 hover:text-violet-700 mr-3"
                         >
                           Open &rarr;
                         </a>
+                        <button
+                          onClick={() => setDeleteTarget({ id: qr.id, label: qr.label || qr.id })}
+                          className="text-xs font-medium text-red-500 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -141,6 +149,28 @@ export default function SalesmanQrCodesPage() {
       {modalShop && (
         <QrCodesModal shopId={modalShop.id} shopName={modalShop.name} onClose={() => setModalShop(null)} />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this QR code?"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.label}" will be permanently removed. If it's printed on a standee, that code will stop working.`
+            : ""
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          const { data } = await deleteQrCode(deleteTarget.id);
+          if (data.success) {
+            setDeleteTarget(null);
+            const targetPage = qrCodes.length === 1 && page > 1 ? page - 1 : page;
+            setPage(targetPage);
+            await refresh(targetPage);
+          } else {
+            throw new Error(data.message || "Failed to delete QR code");
+          }
+        }}
+      />
     </AppLayout>
   );
 }

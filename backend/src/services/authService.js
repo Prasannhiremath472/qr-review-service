@@ -76,4 +76,15 @@ function toUserResponse(user) {
   };
 }
 
-module.exports = { createUser, login, verifyToken, changePassword };
+// deleteUser removes an account. If it's an OWNER linked to shops, those
+// shops keep existing but become unowned (users.id FK on shops.owner_user_id
+// is ON DELETE SET NULL) until relinked to another owner account.
+async function deleteUser(id) {
+  const [existingRows] = await db.query("SELECT id FROM users WHERE id = ?", [id]);
+  if (existingRows.length === 0) {
+    throw new Error("User not found");
+  }
+  await db.query("DELETE FROM users WHERE id = ?", [id]);
+}
+
+module.exports = { createUser, login, verifyToken, changePassword, deleteUser };

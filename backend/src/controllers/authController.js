@@ -60,6 +60,23 @@ async function listUsers(req, res) {
   }
 }
 
+// deleteUser handles DELETE /api/v1/qr-reviews/auth/users/:id — admin-only
+// account deletion. An admin can't delete their own account (would lock
+// them out) — remove it from another admin account instead.
+async function deleteUser(req, res) {
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ success: false, message: "You cannot delete your own account" });
+  }
+
+  try {
+    await authService.deleteUser(req.params.id);
+    res.status(200).json({ success: true, message: "Account deleted successfully" });
+  } catch (err) {
+    const status = err.message === "User not found" ? 404 : 500;
+    res.status(status).json({ success: false, message: err.message });
+  }
+}
+
 async function me(req, res) {
   try {
     const [rows] = await db.query("SELECT id, email, name, role FROM users WHERE id = ?", [req.user.id]);
@@ -91,4 +108,4 @@ async function changePassword(req, res) {
   }
 }
 
-module.exports = { login, createUser, listUsers, me, changePassword };
+module.exports = { login, createUser, listUsers, deleteUser, me, changePassword };

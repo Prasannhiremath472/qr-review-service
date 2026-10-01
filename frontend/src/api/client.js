@@ -76,6 +76,20 @@ export function bulkCreateQrCodes(payload) {
   });
 }
 
+export function createQrCode(payload) {
+  return request(`/api/v1/qr-reviews/qr`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function linkQrCode(qrId, shopId) {
+  return request(`/api/v1/qr-reviews/qr/${qrId}/link`, {
+    method: "POST",
+    body: JSON.stringify({ shop_id: shopId }),
+  });
+}
+
 export function getReviewSuggestion(payload) {
   return request(`/api/v1/qr-reviews/ai/review-suggestions`, {
     method: "POST",
@@ -124,6 +138,18 @@ export function updateShop(shopId, payload) {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+export function deleteShop(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}`, { method: "DELETE" });
+}
+
+export function deleteUser(userId) {
+  return request(`/api/v1/qr-reviews/auth/users/${userId}`, { method: "DELETE" });
+}
+
+export function deleteQrCode(qrId) {
+  return request(`/api/v1/qr-reviews/qr/${qrId}`, { method: "DELETE" });
 }
 
 export function getShopAnalytics({ page = 1, limit = 20 } = {}) {

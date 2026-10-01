@@ -71,6 +71,24 @@ async function resolve(req, res) {
     }
   }
 
+  let services = [];
+  if (shop.services) {
+    try {
+      services = JSON.parse(shop.services);
+    } catch (err) {
+      services = [];
+    }
+  }
+
+  let businessHours = null;
+  if (shop.business_hours) {
+    try {
+      businessHours = JSON.parse(shop.business_hours);
+    } catch (err) {
+      businessHours = null;
+    }
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -86,8 +104,10 @@ async function resolve(req, res) {
       logo_url: shop.logo_url || "",
       brand_color: shop.brand_color || "",
       gallery_photos: galleryPhotos,
+      services,
       about_us: shop.about_us || "",
       open_hours: shop.open_hours || "",
+      business_hours: businessHours,
       whatsapp_number: shop.whatsapp_number || "",
       contact_phone: shop.contact_phone || "",
       contact_email: shop.contact_email || "",

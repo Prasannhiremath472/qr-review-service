@@ -21,6 +21,7 @@ function setupRoutes(app) {
   api.post("/auth/change-password", requireAuth, authController.changePassword);
   api.post("/auth/users", requireAuth, requireRole("ADMIN"), authController.createUser);
   api.get("/auth/users", requireAuth, requireRole("ADMIN", "SALESMAN"), authController.listUsers);
+  api.delete("/auth/users/:id", requireAuth, requireRole("ADMIN"), authController.deleteUser);
 
   // Shop endpoints (admin management)
   api.post("/shops", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.create);
@@ -29,6 +30,7 @@ function setupRoutes(app) {
   api.get("/shops", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.listClients);
   api.get("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.getById);
   api.patch("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.update);
+  api.delete("/shops/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), shopController.deleteClient);
   api.get("/shops/:id/analytics", requireAuth, shopController.myAnalytics);
   api.get("/shops/:shop_id/activity", requireAuth, feedbackController.listActivity);
   api.get("/shops/:shop_id/negative-reviews", requireAuth, feedbackController.listNegative);
@@ -39,6 +41,8 @@ function setupRoutes(app) {
   api.post("/qr/bulk", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.bulkCreate);
   api.post("/qr/:id/activate", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.activate);
   api.get("/qr/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.getById);
+  api.delete("/qr/:id", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.deleteQr);
+  api.post("/qr/:id/link", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.linkQr);
   api.get("/qr", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.listAll);
 
   // Public — customer scans a QR code

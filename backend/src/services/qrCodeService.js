@@ -3,6 +3,7 @@ const db = require("../lib/db");
 const { generate: generateQrImage } = require("../lib/qrgen");
 const { generateBase62Id } = require("../lib/shortId");
 const config = require("../config/config");
+const { serviceListToJson, businessHoursToJson } = require("./shopService");
 
 function toQrCodeResponse(qrCode, extra = {}) {
   const qrUrl = `${config.frontendUrl}/r/${qrCode.id}`;
@@ -113,20 +114,23 @@ async function activateQRCode(qrId, req) {
     Array.isArray(req.gallery_photos) && req.gallery_photos.length > 0
       ? JSON.stringify(req.gallery_photos.slice(0, 5))
       : null;
+  const services = serviceListToJson(req.services);
+  const businessHours = businessHoursToJson(req.business_hours);
 
   const shopId = crypto.randomUUID();
   await db.query(
     `INSERT INTO shops
-       (id, name, owner_name, business_type, tagline, city, review_url, owner_user_id,
-        photo_url, logo_url, gallery_photos, about_us, open_hours,
+       (id, name, owner_name, business_type, tagline, services, city, review_url, owner_user_id,
+        photo_url, logo_url, gallery_photos, about_us, open_hours, business_hours,
         whatsapp_number, contact_phone, contact_email, address)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       shopId,
       req.business_name,
       req.owner_name || "",
       businessType,
       req.tagline || "",
+      services,
       req.city || "",
       req.review_url,
       ownerUserId,
@@ -135,6 +139,7 @@ async function activateQRCode(qrId, req) {
       galleryPhotos,
       req.about_us || null,
       req.open_hours || "",
+      businessHours,
       req.whatsapp_number || "",
       req.contact_phone || "",
       req.contact_email || "",
@@ -157,9 +162,47 @@ async function getQRCodeById(id) {
   return toQrCodeResponse(rows[0]);
 }
 
+// deleteQRCode removes a QR code, linked or not. Its feedback rows are
+// unlinked, not deleted (qr_code_id FK is ON DELETE SET NULL) — the shop's
+// review history stays intact.
+async function deleteQRCode(id) {
+  const [rows] = await db.query("SELECT id FROM qr_codes WHERE id = ?", [id]);
+  if (rows.length === 0) {
+    throw new Error("QR code not found");
+  }
+  await db.query("DELETE FROM qr_codes WHERE id = ?", [id]);
+}
+
+// linkQRCode attaches an existing, currently-unlinked QR code to an
+// existing shop — the missing piece for "I added a client, now I need to
+// attach a QR to it" (as opposed to activateQRCode, which always creates a
+// brand-new shop from scratch). Refuses to relink an already-linked QR;
+// delete/recreate it first if it needs to point somewhere else.
+async function linkQRCode(qrId, shopId) {
+  const [qrRows] = await db.query("SELECT * FROM qr_codes WHERE id = ?", [qrId]);
+  const qrCode = qrRows[0];
+  if (!qrCode) {
+    throw new Error("QR code not found");
+  }
+  if (qrCode.shop_id) {
+    throw new Error("QR code is already linked to a business");
+  }
+
+  const [shopRows] = await db.query("SELECT id, name FROM shops WHERE id = ?", [shopId]);
+  const shop = shopRows[0];
+  if (!shop) {
+    throw new Error("shop not found");
+  }
+
+  await db.query("UPDATE qr_codes SET shop_id = ? WHERE id = ?", [shopId, qrId]);
+  return shop;
+}
+
 module.exports = {
   createQRCode,
   bulkCreateQRCodes,
   activateQRCode,
   getQRCodeById,
+  deleteQRCode,
+  linkQRCode,
 };

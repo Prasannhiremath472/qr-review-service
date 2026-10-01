@@ -69,7 +69,10 @@ function filterBestInCitySingle(text, city) {
   return text;
 }
 
-// applySafetyFilterSingle applies safety filtering to a single review string.
+// applySafetyFilterSingle applies AI-sounding-phrase/style filtering to a
+// single review string (NOT content moderation — see containsUnsafeContent
+// below for that). Kept under its original name since it's the established
+// post-generation cleanup step every review already passes through.
 function applySafetyFilterSingle(text, city) {
   text = filterBestInCitySingle(text, city);
 
@@ -89,4 +92,45 @@ function applySafetyFilterSingle(text, city) {
   return text;
 }
 
-module.exports = { applySafetyFilterSingle, splitSentences };
+// Last-resort local content-safety backstop, checked after Gemini's own
+// safetySettings and system-prompt rules (aiSuggestionService.js). Matches
+// whole words/short phrases only (word-boundary regex), case-insensitive,
+// across common obfuscations (spaced/punctuated letters), so it catches
+// profanity, slurs, and sexual terms that slip through the model without
+// false-positiving on ordinary review words. Not an exhaustive list — it's
+// a safety net, not the primary control.
+const UNSAFE_PATTERNS = [
+  // Profanity / vulgar language
+  /\bf+\W*u+\W*c+\W*k+\w*/i,
+  /\bs+\W*h+\W*i+\W*t+\w*/i,
+  /\bb+\W*i+\W*t+\W*c+\W*h+\w*/i,
+  /\ba+\W*s+\W*s+\W*h+\W*o+\W*l+\W*e+\w*/i,
+  /\bb+\W*a+\W*s+\W*t+\W*a+\W*r+\W*d+\w*/i,
+  /\bc+\W*u+\W*n+\W*t+\w*/i,
+  /\bd+\W*i+\W*c+\W*k+\w*/i,
+  /\bp+\W*u+\W*s+\W*s+\W*y+\w*/i,
+  /\bwhore\b/i,
+  /\bslut\b/i,
+  // Sexual / nudity content
+  /\bsex(ual|y|ually)?\b/i,
+  /\bnud(e|ity)\b/i,
+  /\bporn(ography)?\b/i,
+  /\berotic\b/i,
+  /\borgasm\b/i,
+  /\bmasturbat\w*/i,
+  /\bhorny\b/i,
+  // Slurs / hate speech (kept minimal and generic on purpose)
+  /\brape\b/i,
+  /\bn[i1]gg[ae3]r?\b/i,
+  /\bf[a4]gg?[o0]t\b/i,
+  // Violence / self-harm
+  /\bkill\s*(yourself|myself|himself|herself)\b/i,
+  /\bsuicide\b/i,
+];
+
+function containsUnsafeContent(text) {
+  if (!text) return false;
+  return UNSAFE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+module.exports = { applySafetyFilterSingle, containsUnsafeContent, splitSentences };

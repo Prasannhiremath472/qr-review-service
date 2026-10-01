@@ -10,10 +10,14 @@ const { seedAdmin } = require("../scripts/seed-admin");
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin }));
-// Raised from Express's 100KB default: activation payloads carry a base64-
-// encoded shop photo (already compressed client-side to ~800px/JPEG q70,
-// but that can still be tens of KB as base64 text plus the rest of the form).
-app.use(express.json({ limit: "2mb" }));
+// Raised from Express's 100KB default: an activation/edit payload can carry
+// up to 7 base64-encoded images in one request — photo, logo, and up to 5
+// gallery photos (each pre-compressed client-side to ~800px/JPEG q70 via
+// /uploads/shop-photo, but that's still commonly 200-350KB as base64 text
+// per image). 2mb was cutting this close and 413'd on realistic uploads
+// (verified: photo+logo+5 gallery photos from real phone camera photos
+// regularly totals 2.2-2.5MB) — 10mb gives real headroom above that.
+app.use(express.json({ limit: "10mb" }));
 app.use(requestLogger);
 
 setupRoutes(app);

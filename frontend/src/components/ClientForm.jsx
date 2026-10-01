@@ -3,6 +3,8 @@ import { uploadShopPhoto } from "../api/client.js";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 import { resolveReviewUrl, REVIEW_URL_PREFIX } from "../lib/googleReview.js";
 import ResolvedUrlPreview from "./ResolvedUrlPreview.jsx";
+import ServicesEditor from "./ServicesEditor.jsx";
+import BusinessHoursEditor from "./BusinessHoursEditor.jsx";
 
 const MAX_GALLERY_PHOTOS = 5;
 const CUSTOM_TYPE_VALUE = "__custom__";
@@ -25,6 +27,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
   const [tagline, setTagline] = useState(iv.tagline || "");
   const [aboutUs, setAboutUs] = useState(iv.about_us || "");
   const [openHours, setOpenHours] = useState(iv.open_hours || "");
+  const [businessHours, setBusinessHours] = useState(Array.isArray(iv.business_hours) ? iv.business_hours : null);
   const [whatsappNumber, setWhatsappNumber] = useState(iv.whatsapp_number || "");
   const [contactPhone, setContactPhone] = useState(iv.contact_phone || "");
   const [contactEmail, setContactEmail] = useState(iv.contact_email || "");
@@ -37,6 +40,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
     Array.isArray(iv.gallery_photos) ? iv.gallery_photos : []
   );
   const [galleryFiles, setGalleryFiles] = useState([]);
+  const [services, setServices] = useState(Array.isArray(iv.services) ? iv.services : []);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -124,6 +128,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
         tagline: tagline.trim(),
         about_us: aboutUs.trim(),
         open_hours: openHours.trim(),
+        business_hours: businessHours,
         whatsapp_number: whatsappNumber.trim(),
         contact_phone: contactPhone.trim(),
         contact_email: contactEmail.trim(),
@@ -131,6 +136,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
         logo_url: logoUrl,
         photo_url: photoUrl,
         gallery_photos: galleryUrls,
+        services,
       });
 
       if (!result?.success) {
@@ -335,6 +341,8 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
         )}
       </div>
 
+      <ServicesEditor services={services} onChange={setServices} />
+
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-1.5">About Us</label>
         <textarea
@@ -346,9 +354,11 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
         />
       </div>
 
+      <BusinessHoursEditor hours={businessHours} onChange={setBusinessHours} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1.5">Open Hours</label>
+          <label className="block text-sm font-medium text-zinc-700 mb-1.5">Open Hours (fallback text)</label>
           <input
             type="text"
             placeholder="e.g. Mon-Sat 10am - 9pm"
@@ -356,6 +366,9 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
             onChange={(e) => setOpenHours(e.target.value)}
             className="field-input w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
           />
+          <p className="text-xs text-zinc-400 mt-1.5">
+            Only shown if Business Hours above isn't set.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium text-zinc-700 mb-1.5">WhatsApp Number</label>

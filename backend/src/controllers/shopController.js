@@ -108,6 +108,18 @@ async function update(req, res) {
   }
 }
 
+// deleteClient handles DELETE /api/v1/qr-reviews/shops/:id — admin/salesman
+// "delete client". See shopService.deleteShop for cascade behavior.
+async function deleteClient(req, res) {
+  try {
+    await shopService.deleteShop(req.params.id);
+    res.status(200).json({ success: true, message: "Client deleted successfully" });
+  } catch (err) {
+    const status = err.message === "shop not found" ? 404 : 500;
+    res.status(status).json({ success: false, message: err.message });
+  }
+}
+
 // analytics handles GET /api/v1/qr-reviews/shops/analytics — per-shop QR scans,
 // review page views, total reviews submitted, and reviews with a 4-5 star rating.
 async function analytics(req, res) {
@@ -152,4 +164,4 @@ async function analytics(req, res) {
   }
 }
 
-module.exports = { create, getById, listMine, listClients, update, analytics, myAnalytics };
+module.exports = { create, getById, listMine, listClients, update, deleteClient, analytics, myAnalytics };

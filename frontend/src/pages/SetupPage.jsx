@@ -5,6 +5,8 @@ import { useAuth } from "../auth/AuthContext.jsx";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 import { resolveReviewUrl, REVIEW_URL_PREFIX } from "../lib/googleReview.js";
 import ResolvedUrlPreview from "../components/ResolvedUrlPreview.jsx";
+import ServicesEditor from "../components/ServicesEditor.jsx";
+import BusinessHoursEditor from "../components/BusinessHoursEditor.jsx";
 
 export default function SetupPage({ qrId }) {
   const { user, loading } = useAuth();
@@ -68,6 +70,7 @@ function ActivationForm({ qrId }) {
   const [tagline, setTagline] = useState("");
   const [aboutUs, setAboutUs] = useState("");
   const [openHours, setOpenHours] = useState("");
+  const [businessHours, setBusinessHours] = useState(null);
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -77,6 +80,7 @@ function ActivationForm({ qrId }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [galleryFiles, setGalleryFiles] = useState([]);
+  const [services, setServices] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -158,6 +162,7 @@ function ActivationForm({ qrId }) {
         tagline: tagline.trim(),
         about_us: aboutUs.trim(),
         open_hours: openHours.trim(),
+        business_hours: businessHours,
         whatsapp_number: whatsappNumber.trim(),
         contact_phone: contactPhone.trim(),
         contact_email: contactEmail.trim(),
@@ -165,6 +170,7 @@ function ActivationForm({ qrId }) {
         logo_url: logoUrl,
         photo_url: photoUrl,
         gallery_photos: galleryUrls,
+        services,
       });
 
       if (data.success) {
@@ -385,6 +391,8 @@ function ActivationForm({ qrId }) {
                 <p className="text-xs text-zinc-400 mt-1.5">Storefront, interior, products — up to {MAX_GALLERY_PHOTOS} photos</p>
               </div>
 
+              <ServicesEditor services={services} onChange={setServices} />
+
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">About Us</label>
                 <textarea
@@ -396,8 +404,10 @@ function ActivationForm({ qrId }) {
                 />
               </div>
 
+              <BusinessHoursEditor hours={businessHours} onChange={setBusinessHours} />
+
               <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Open Hours</label>
+                <label className="block text-sm font-medium text-zinc-700 mb-1.5">Open Hours (fallback text)</label>
                 <input
                   type="text"
                   placeholder="e.g. Mon-Sat 10am - 9pm"
@@ -405,6 +415,7 @@ function ActivationForm({ qrId }) {
                   onChange={(e) => setOpenHours(e.target.value)}
                   className="field-input w-full px-4 py-3 border border-zinc-200 rounded-xl text-[15px] bg-zinc-50/60"
                 />
+                <p className="text-xs text-zinc-400 mt-1.5">Only shown if Business Hours above isn't set.</p>
               </div>
 
               <div>

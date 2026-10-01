@@ -73,6 +73,40 @@ async function getById(req, res) {
   }
 }
 
+// deleteQr handles DELETE /api/v1/qr-reviews/qr/:id — admin/salesman
+// "delete QR code" (linked or unlinked).
+async function deleteQr(req, res) {
+  try {
+    await qrCodeService.deleteQRCode(req.params.id);
+    res.status(200).json({ success: true, message: "QR code deleted successfully" });
+  } catch (err) {
+    const status = err.message === "QR code not found" ? 404 : 500;
+    res.status(status).json({ success: false, message: err.message });
+  }
+}
+
+// linkQr handles POST /api/v1/qr-reviews/qr/:id/link — admin/salesman
+// attaching an existing unlinked QR code to an existing shop (e.g. a client
+// just added via "Add Client" that has no QR yet).
+async function linkQr(req, res) {
+  const { shop_id } = req.body || {};
+  if (!shop_id) {
+    return res.status(400).json({ success: false, message: "Invalid request: shop_id is required" });
+  }
+
+  try {
+    const shop = await qrCodeService.linkQRCode(req.params.id, shop_id);
+    res.status(200).json({
+      success: true,
+      message: "QR code linked successfully",
+      data: { qr_id: req.params.id, shop_id: shop.id, shop_name: shop.name },
+    });
+  } catch (err) {
+    const status = err.message === "QR code not found" || err.message === "shop not found" ? 404 : 400;
+    res.status(status).json({ success: false, message: err.message });
+  }
+}
+
 async function image(req, res) {
   const id = req.params.id;
   try {
@@ -171,4 +205,4 @@ async function listAll(req, res) {
   }
 }
 
-module.exports = { create, bulkCreate, activate, getById, image, dashboard, listAll };
+module.exports = { create, bulkCreate, activate, getById, deleteQr, linkQr, image, dashboard, listAll };

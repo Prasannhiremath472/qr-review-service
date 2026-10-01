@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { listClients, createShop } from "../api/client.js";
+import { listClients, createShop, deleteShop } from "../api/client.js";
 import AppLayout from "../components/AppLayout.jsx";
 import Pagination from "../components/Pagination.jsx";
 import ClientForm from "../components/ClientForm.jsx";
 import QrCodesModal from "../components/QrCodesModal.jsx";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -18,6 +19,7 @@ export default function AdminClientsPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 });
   const [modalShop, setModalShop] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   async function refresh(targetPage = page) {
     const { data } = await listClients({ page: targetPage, limit: PAGE_SIZE });
@@ -126,9 +128,15 @@ export default function AdminClientsPage() {
                           </button>
                           <button
                             onClick={() => setModalShop({ id: c.id, name: c.name })}
-                            className="text-xs font-medium text-zinc-500 hover:text-violet-700"
+                            className="text-xs font-medium text-zinc-500 hover:text-violet-700 mr-3"
                           >
                             View QR Codes &rarr;
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                            className="text-xs font-medium text-red-500 hover:text-red-700"
+                          >
+                            Delete
                           </button>
                         </td>
                       </tr>
@@ -145,6 +153,28 @@ export default function AdminClientsPage() {
       {modalShop && (
         <QrCodesModal shopId={modalShop.id} shopName={modalShop.name} onClose={() => setModalShop(null)} />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this client?"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.name}" will be permanently removed, along with its review history. Its QR codes will be unlinked, not deleted, so the printed standees stay reusable.`
+            : ""
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          const { data } = await deleteShop(deleteTarget.id);
+          if (data.success) {
+            setDeleteTarget(null);
+            const targetPage = clients.length === 1 && page > 1 ? page - 1 : page;
+            setPage(targetPage);
+            await refresh(targetPage);
+          } else {
+            throw new Error(data.message || "Failed to delete client");
+          }
+        }}
+      />
     </AppLayout>
   );
 }

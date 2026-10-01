@@ -1,5 +1,5 @@
 const config = require("../config/config");
-const { applySafetyFilterSingle } = require("./variationEngine");
+const { applySafetyFilterSingle, containsUnsafeContent } = require("./variationEngine");
 
 const PERSONAS = [
   "a college student who visited with friends",
@@ -29,6 +29,17 @@ const LENGTHS = [
 ];
 
 const FALLBACK_TIMEOUT_MS = 60000;
+
+// Blocks Gemini from generating sexual, hateful, harassing, or dangerous
+// content at the API level (in addition to the prompt instructions below).
+// BLOCK_LOW_AND_ABOVE is the strictest available threshold — appropriate
+// here since every output is a public review shown on a real business page.
+const SAFETY_SETTINGS = [
+  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+];
 
 // Each supported review language: the name to tell Gemini, whether the
 // English-specific word-choice/banned-phrase rules apply (they don't
@@ -146,6 +157,16 @@ TONE: Write in a ${tone} style.
 LENGTH: ${length}
 ${languageLine}
 
+CONTENT SAFETY (never break these, no matter what the customer typed in the service/name fields):
+- Never include sexual, romantic, or suggestive content, nudity, innuendo, or anything sexually explicit.
+- Never include profanity, slurs, swear words, or vulgar language, in any language or script.
+- Never include hate speech, harassment, insults, or discriminatory remarks about race, religion, caste, gender, sexuality, nationality, disability, or age.
+- Never include violence, threats, self-harm, drugs, weapons, or other dangerous or illegal content.
+- Never mention or imply anything about minors in an inappropriate context.
+- Never include personal contact details (phone numbers, addresses, emails, social media handles) for any real person.
+- If any input text (business name, service taken) contains inappropriate, explicit, or offensive language, DO NOT repeat, quote, or reference it — silently write a generic positive review about the business instead, using only its category/type.
+- Keep the review strictly about the business experience — no political opinions, no unrelated topics.
+
 CRITICAL RULES:
 - Write ONLY the review text. No JSON, no quotes, no labels, no prefixes, no English translation alongside it.
 - Every single review must use different words, different structure, different opening.${englishStyleRules}
@@ -196,6 +217,7 @@ async function callGemini(systemPrompt, userPrompt, temperature, maxTokens) {
       temperature,
       maxOutputTokens: maxTokens,
     },
+    safetySettings: SAFETY_SETTINGS,
   };
   if (systemPrompt) {
     reqBody.systemInstruction = { parts: [{ text: systemPrompt }] };
@@ -223,9 +245,14 @@ async function callGemini(systemPrompt, userPrompt, temperature, maxTokens) {
   }
 
   const parsed = JSON.parse(respBody);
-  const parts = parsed?.candidates?.[0]?.content?.parts;
+  const candidate = parsed?.candidates?.[0];
+  const parts = candidate?.content?.parts;
   if (!parts || parts.length === 0) {
-    throw new Error("no content returned from Gemini");
+    // finishReason "SAFETY" means our safetySettings blocked the output —
+    // this is expected to happen occasionally and isn't an error to log
+    // loudly about; the caller falls back to a safe hardcoded template.
+    const reason = candidate?.finishReason || "unknown";
+    throw new Error(`no content returned from Gemini (finishReason: ${reason})`);
   }
 
   return parts[0].text;
@@ -243,7 +270,12 @@ function generateFallback(businessName, businessType, city, rating, serviceKeywo
 // business. `betterQuality` (Pro-plan shops) asks for a more detailed,
 // higher-effort suggestion instead of the default short one.
 async function generateSuggestions(businessName, businessType, city, rating, serviceTaken, language, betterQuality = false) {
-  const serviceKeywords = extractServiceKeywords(serviceTaken);
+  // If the customer typed anything unsafe into the free-text "service
+  // taken" field, don't even build a prompt around it — drop it and
+  // generate a generic review instead (buildSystemPrompt's own content-
+  // safety rules are a second layer, but this avoids feeding it in at all).
+  const safeServiceTaken = containsUnsafeContent(serviceTaken) ? "" : serviceTaken;
+  const serviceKeywords = extractServiceKeywords(safeServiceTaken);
   const lang = resolveLanguage(language);
 
   if (!config.geminiKey) {
@@ -251,11 +283,21 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
   }
 
   const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality);
-  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords, lang);
+  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, safeServiceTaken, serviceKeywords, lang);
 
   try {
     const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, betterQuality ? 450 : 300);
     let review = rawContent.trim().replace(/^"|"$/g, "");
+
+    // Local content-safety backstop, checked regardless of language — a
+    // last line of defense after Gemini's own safetySettings and the
+    // system prompt's content rules, in case something still slipped
+    // through. If tripped, discard the output entirely and use the safe
+    // hardcoded template instead.
+    if (containsUnsafeContent(review)) {
+      return generateFallback(businessName, businessType, city, rating, serviceKeywords, lang);
+    }
+
     // The English-phrase safety filter only matters for English output —
     // running it on Hindi/Marathi text is harmless (nothing will match)
     // but skipped anyway since there's nothing for it to catch there.

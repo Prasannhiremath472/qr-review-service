@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { createUser, listUsers } from "../api/client.js";
+import { createUser, listUsers, deleteUser } from "../api/client.js";
+import { useAuth } from "../auth/AuthContext.jsx";
 import AppLayout from "../components/AppLayout.jsx";
 import Pagination from "../components/Pagination.jsx";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const PAGE_SIZE = 10;
 
 export default function AdminAccountsPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 });
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   async function refresh(targetPage = page) {
     const { data } = await listUsers({ page: targetPage, limit: PAGE_SIZE });
@@ -80,6 +84,7 @@ export default function AdminAccountsPage() {
                   <th className="px-5 py-3 font-medium">Email</th>
                   <th className="px-5 py-3 font-medium">Role</th>
                   <th className="px-5 py-3 font-medium hidden sm:table-cell">Created</th>
+                  <th className="px-5 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -100,6 +105,16 @@ export default function AdminAccountsPage() {
                     <td className="px-5 py-3 text-zinc-400 hidden sm:table-cell">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      {u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => setDeleteTarget({ id: u.id, label: u.name || u.email })}
+                          className="text-xs font-medium text-red-500 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -108,6 +123,24 @@ export default function AdminAccountsPage() {
         )}
         <Pagination page={page} totalPages={meta.total_pages} onChange={setPage} />
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this account?"
+        message={deleteTarget ? `"${deleteTarget.label}" will lose access immediately. This can't be undone.` : ""}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          const { data } = await deleteUser(deleteTarget.id);
+          if (data.success) {
+            setDeleteTarget(null);
+            const targetPage = users.length === 1 && page > 1 ? page - 1 : page;
+            setPage(targetPage);
+            await refresh(targetPage);
+          } else {
+            throw new Error(data.message || "Failed to delete account");
+          }
+        }}
+      />
     </AppLayout>
   );
 }
