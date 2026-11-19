@@ -197,6 +197,35 @@ export function verifyPayment(payload) {
   });
 }
 
+export function listCustomerPhotos(shopId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/customer-photos`);
+}
+
+export function deleteCustomerPhoto(shopId, photoId) {
+  return request(`/api/v1/qr-reviews/shops/${shopId}/customer-photos/${photoId}`, { method: "DELETE" });
+}
+
+// Public: photos a customer attached on the review page (up to 4 files).
+// Aborts after `timeoutMs` so a slow upload never traps the customer on the page.
+export async function uploadCustomerPhotos(qrId, files, timeoutMs = 20000) {
+  const formData = new FormData();
+  files.forEach((f) => formData.append("photos", f, f.name || "photo.jpg"));
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(`${API_BASE_URL}/api/v1/qr-reviews/qr/${qrId}/customer-photos`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    const data = await resp.json().catch(() => ({}));
+    return { ok: resp.ok, status: resp.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function uploadShopPhoto(file, type = "photo") {
   const token = getToken();
   const headers = {};

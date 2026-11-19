@@ -34,7 +34,8 @@ async function getSuggestions(req, res) {
       rating,
       req.body.service_taken,
       req.body.language,
-      betterQuality
+      betterQuality,
+      req.body.highlights
     );
     res.status(200).json({ success: true, data: suggestions });
   } catch (err) {

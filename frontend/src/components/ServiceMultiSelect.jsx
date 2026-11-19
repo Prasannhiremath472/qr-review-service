@@ -1,11 +1,25 @@
 import { useState } from "react";
+import { CheckIcon, PlusIcon, XIcon } from "./review/icons.jsx";
 
-// ServiceMultiSelect shows the business's predefined services (set by
-// admin/salesman) as toggleable chips, plus a "+ Add" control for a custom
-// service not in the list. Replaces the old free-text "which service did
-// you take?" input on the customer-facing review page. Selection is
-// optional — the customer can continue with none selected.
-export default function ServiceMultiSelect({ options, selected, onChange, brandColor }) {
+// ServiceMultiSelect shows a list of predefined options as toggleable chips,
+// plus an "Add" control for a custom one not in the list. Used for the
+// business's services (set by admin/salesman) and for the "what did you
+// like?" qualities. Selection is optional — the customer can continue with
+// none selected. Styled with the review-page theme (.rv-theme), so the
+// active colour follows the business's brand colour.
+//   title / showOptional — heading text and whether to append "(optional)"
+//   icon                 — optional icon shown before the heading
+//   renderOption         — display label for an option (selected values stay as-is)
+export default function ServiceMultiSelect({
+  options,
+  selected,
+  onChange,
+  t,
+  title,
+  showOptional = true,
+  icon = null,
+  renderOption = (o) => o,
+}) {
   const [addingCustom, setAddingCustom] = useState(false);
   const [customValue, setCustomValue] = useState("");
 
@@ -46,16 +60,21 @@ export default function ServiceMultiSelect({ options, selected, onChange, brandC
   // predefined options — shown as their own removable chips.
   const customSelected = selected.filter((s) => !options.includes(s));
 
-  const chipActiveStyle = brandColor
-    ? { backgroundColor: brandColor, borderColor: brandColor, color: "#fff" }
-    : undefined;
+  const chipBase =
+    "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60";
+  const chipOn = "border-primary bg-primary/10 text-primary";
+  const chipOff = "border-lavender text-foreground hover:bg-muted";
 
   return (
     <div>
-      <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-        Which service did you take? <span className="text-zinc-300">(optional)</span>
-      </label>
-      <div className="flex flex-wrap gap-2">
+      <h3 className="flex items-center gap-2 font-display font-semibold text-foreground">
+        {icon}
+        <span>
+          {title ?? t.whichService}{" "}
+          {showOptional && <span className="text-sm font-normal text-muted-foreground">{t.optional}</span>}
+        </span>
+      </h3>
+      <div className="mt-2 flex flex-wrap gap-2">
         {hasOptions &&
           options.map((service) => {
             const active = selected.includes(service);
@@ -65,34 +84,23 @@ export default function ServiceMultiSelect({ options, selected, onChange, brandC
                 type="button"
                 onClick={() => toggle(service)}
                 aria-pressed={active}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  active
-                    ? brandColor
-                      ? ""
-                      : "bg-violet-600 border-violet-600 text-white"
-                    : "bg-white border-zinc-200 text-zinc-600 hover:border-violet-300"
-                }`}
-                style={active ? chipActiveStyle : undefined}
+                className={`${chipBase} ${active ? chipOn : chipOff}`}
               >
-                {service}
+                {active && <CheckIcon className="h-4 w-4" />} {renderOption(service)}
               </button>
             );
           })}
 
         {customSelected.map((service) => (
-          <span
-            key={service}
-            className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full text-sm font-medium border"
-            style={chipActiveStyle || { backgroundColor: "#7c3aed", borderColor: "#7c3aed", color: "#fff" }}
-          >
-            {service}
+          <span key={service} className={`${chipBase} ${chipOn} pr-2`}>
+            <CheckIcon className="h-4 w-4" /> {service}
             <button
               type="button"
               onClick={() => removeCustom(service)}
-              className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-white/20"
-              aria-label={`Remove ${service}`}
+              className="grid h-5 w-5 place-items-center rounded-full hover:bg-primary/15"
+              aria-label={`${t.removeService} ${service}`}
             >
-              &times;
+              <XIcon className="h-3.5 w-3.5" />
             </button>
           </span>
         ))}
@@ -105,23 +113,17 @@ export default function ServiceMultiSelect({ options, selected, onChange, brandC
             onChange={(e) => setCustomValue(e.target.value)}
             onKeyDown={handleCustomKeyDown}
             onBlur={commitCustom}
-            placeholder="Type & press Enter"
-            className="field-input px-3 py-1.5 border border-zinc-200 rounded-full text-sm bg-zinc-50/60 w-36"
+            placeholder={t.typeAndEnter}
+            className="w-44 rounded-full border border-primary bg-muted/40 px-4 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground"
           />
         ) : (
-          <button
-            type="button"
-            onClick={() => setAddingCustom(true)}
-            className="px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-zinc-300 text-zinc-500 hover:border-violet-300 hover:text-violet-600"
-          >
-            + Add
+          <button type="button" onClick={() => setAddingCustom(true)} className={`${chipBase} ${chipOff}`}>
+            <PlusIcon className="h-4 w-4" /> {t.add}
           </button>
         )}
       </div>
-      {!hasOptions && (
-        <p className="text-xs text-zinc-400 mt-1.5">
-          {customSelected.length === 0 ? "Tap “+ Add” to mention what you came in for." : ""}
-        </p>
+      {!hasOptions && customSelected.length === 0 && (
+        <p className="mt-1.5 text-xs text-muted-foreground">{t.addHint}</p>
       )}
     </div>
   );

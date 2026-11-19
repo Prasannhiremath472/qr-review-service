@@ -119,6 +119,7 @@ function toClientResponse(shop) {
     gallery_photos: parseGalleryPhotos(shop),
     services: parseServices(shop),
     brand_color: shop.brand_color || "",
+    is_verified: !!shop.is_verified,
     plan_id: shop.plan_id || null,
     subscription_start_date: shop.subscription_start_date,
     subscription_end_date: shop.subscription_end_date,
@@ -144,8 +145,8 @@ async function createShop(req) {
        (id, name, owner_name, business_type, tagline, services, city, review_url,
         photo_url, logo_url, gallery_photos, about_us, open_hours, business_hours,
         whatsapp_number, contact_phone, contact_email, address,
-        subscription_start_date, subscription_end_date, subscription_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        subscription_start_date, subscription_end_date, subscription_status, is_verified)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       req.name,
@@ -168,6 +169,7 @@ async function createShop(req) {
       req.subscription_start_date || null,
       req.subscription_end_date || null,
       req.subscription_status === "SUSPENDED" ? "SUSPENDED" : "ACTIVE",
+      req.is_verified === false ? 0 : 1,
     ]
   );
 
@@ -245,6 +247,10 @@ async function updateShop(id, req) {
   if (req.plan_id !== undefined) {
     sets.push("plan_id = ?");
     values.push(req.plan_id || null);
+  }
+  if (req.is_verified !== undefined) {
+    sets.push("is_verified = ?");
+    values.push(req.is_verified ? 1 : 0);
   }
 
   if (sets.length === 0) {

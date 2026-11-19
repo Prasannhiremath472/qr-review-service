@@ -6,6 +6,7 @@ import OwnerShopGate from "../components/OwnerShopGate.jsx";
 import SubscriptionPanel from "../components/SubscriptionPanel.jsx";
 import NegativeReviewsPanel from "../components/NegativeReviewsPanel.jsx";
 import MonthlyReportPanel from "../components/MonthlyReportPanel.jsx";
+import CustomerPhotosPanel from "../components/CustomerPhotosPanel.jsx";
 
 export default function OwnerOverviewPage() {
   return (
@@ -63,6 +64,10 @@ function Overview({ shop }) {
 
       <div className="mt-5">
         <NegativeReviewsPanel shopId={shop.id} />
+      </div>
+
+      <div className="mt-5">
+        <CustomerPhotosPanel shopId={shop.id} shopName={shop.name} />
       </div>
 
       <div className="mt-5">

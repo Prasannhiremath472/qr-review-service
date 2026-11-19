@@ -41,6 +41,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
   );
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [services, setServices] = useState(Array.isArray(iv.services) ? iv.services : []);
+  const [isVerified, setIsVerified] = useState(iv.is_verified !== false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -137,6 +138,7 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
         photo_url: photoUrl,
         gallery_photos: galleryUrls,
         services,
+        is_verified: isVerified,
       });
 
       if (!result?.success) {
@@ -342,6 +344,21 @@ export default function ClientForm({ onSubmit, submitLabel = "Add Client", initi
       </div>
 
       <ServicesEditor services={services} onChange={setServices} />
+
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isVerified}
+          onChange={(e) => setIsVerified(e.target.checked)}
+          className="mt-0.5 w-4 h-4 accent-violet-600"
+        />
+        <span>
+          <span className="block text-sm font-medium text-zinc-700">Show verified badge</span>
+          <span className="block text-xs text-zinc-400">
+            Displays a verified tick next to the business logo on the customer review page.
+          </span>
+        </span>
+      </label>
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-1.5">About Us</label>

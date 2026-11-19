@@ -67,6 +67,41 @@ a {
   border: 1px solid var(--border-soft);
 }
 
+/* ---------- Customer review page theme ----------
+   Space-separated RGB channels so Tailwind opacity modifiers (bg-primary/10)
+   work. --rv-primary is overridden inline per business from its brand color. */
+
+.rv-theme {
+  --rv-background: 244 245 246;
+  --rv-foreground: 30 31 34;
+  --rv-card: 255 255 255;
+  --rv-primary: 60 98 147;
+  --rv-primary-foreground: 255 255 255;
+  --rv-muted: 241 245 249;
+  --rv-muted-foreground: 95 100 106;
+  --rv-star: 215 170 66;
+  --rv-star-soft: 248 241 227;
+  --rv-lavender: 213 216 219;
+  --rv-destructive: 184 78 69;
+  --rv-border: 226 232 240;
+  background: rgb(var(--rv-background));
+  color: rgb(var(--rv-foreground));
+}
+
+.rv-theme .typing-cursor {
+  color: rgb(var(--rv-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-theme .fade-in,
+  .rv-theme .slide-up,
+  .rv-theme .pop-in,
+  .rv-theme .shimmer,
+  .rv-theme .pulse-dot {
+    animation: none;
+  }
+}
+
 /* ---------- Star rating ---------- */
 
 .star {

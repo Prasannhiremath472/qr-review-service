@@ -125,7 +125,22 @@ function extractServiceKeywords(serviceTaken) {
     .filter(Boolean);
 }
 
-function buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality) {
+// Cleans the "what did you like?" qualities the customer picked (e.g.
+// "Friendly Staff"): at most 6 short strings, with anything unsafe dropped.
+function sanitizeHighlights(highlights) {
+  if (!Array.isArray(highlights)) return [];
+  const out = [];
+  for (const h of highlights) {
+    if (typeof h !== "string") continue;
+    const text = h.trim().slice(0, 40);
+    if (!text || containsUnsafeContent(text)) continue;
+    out.push(text);
+    if (out.length === 6) break;
+  }
+  return out;
+}
+
+function buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality, highlights = []) {
   const now = Date.now();
   const persona = PERSONAS[Math.floor((now / 1000) % PERSONAS.length)];
   const tone = TONES[Math.floor((now / 1000) % TONES.length)];
@@ -135,6 +150,11 @@ function buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQual
     serviceKeywords.length > 0
       ? `- The customer came in specifically for: ${serviceKeywords.map((k) => `"${k}"`).join(", ")} — build the review AROUND this. Mention it using the customer's own words (or a very close natural paraphrase, translated naturally into the target language), and describe how that specific service went. Do not invent an unrelated service or detail instead.`
       : `- Include ONE specific detail (a menu item, a feature, staff interaction, or atmosphere detail) — make it up but keep it realistic for this type of business`;
+
+  const highlightLine =
+    highlights.length > 0
+      ? `\n- The customer especially liked: ${highlights.map((h) => `"${h}"`).join(", ")}. Work these in naturally as things that stood out about the experience (translated naturally into the target language) — don't list them mechanically or repeat the labels word for word.`
+      : "";
 
   const languageLine = `LANGUAGE: Write the ENTIRE review in ${lang.name}. Do not mix in English words except for the business name itself if it doesn't translate naturally. Use natural, everyday phrasing a native speaker would actually type on their phone — not a stiff or literal translation.`;
 
@@ -170,7 +190,7 @@ CONTENT SAFETY (never break these, no matter what the customer typed in the serv
 CRITICAL RULES:
 - Write ONLY the review text. No JSON, no quotes, no labels, no prefixes, no English translation alongside it.
 - Every single review must use different words, different structure, different opening.${englishStyleRules}
-${serviceLine}
+${serviceLine}${highlightLine}
 - Mention the business name "${businessName}" naturally (not forced)
 - If city is provided, mention "${city}" naturally only if it fits — don't force it
 - Small imperfections make reviews real: it's okay to mention one minor thing or use informal grammar
@@ -182,12 +202,12 @@ ${serviceLine}
   }`;
 }
 
-function buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords, lang) {
+function buildUserPrompt(businessName, businessType, city, rating, serviceTaken, serviceKeywords, lang, highlights = []) {
   const seed = Date.now() % 100000;
   const serviceBlock =
-    serviceKeywords.length > 0
+    (serviceKeywords.length > 0
       ? `Service(s) taken (customer's own words): ${serviceTaken}\nKeywords to build the review around: ${serviceKeywords.join(", ")}\n`
-      : "";
+      : "") + (highlights.length > 0 ? `What the customer liked: ${highlights.join(", ")}\n` : "");
   return `Business: ${businessName}
 Type: ${businessType}
 City: ${city}
@@ -269,7 +289,8 @@ function generateFallback(businessName, businessType, city, rating, serviceKeywo
 // generateSuggestions generates a single ready-to-paste Google Review for a
 // business. `betterQuality` (Pro-plan shops) asks for a more detailed,
 // higher-effort suggestion instead of the default short one.
-async function generateSuggestions(businessName, businessType, city, rating, serviceTaken, language, betterQuality = false) {
+async function generateSuggestions(businessName, businessType, city, rating, serviceTaken, language, betterQuality = false, highlightsInput = []) {
+  const highlights = sanitizeHighlights(highlightsInput);
   // If the customer typed anything unsafe into the free-text "service
   // taken" field, don't even build a prompt around it — drop it and
   // generate a generic review instead (buildSystemPrompt's own content-
@@ -282,8 +303,8 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
     return generateFallback(businessName, businessType, city, rating, serviceKeywords, lang);
   }
 
-  const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality);
-  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, safeServiceTaken, serviceKeywords, lang);
+  const systemPrompt = buildSystemPrompt(businessName, city, serviceKeywords, lang, betterQuality, highlights);
+  const userPrompt = buildUserPrompt(businessName, businessType, city, rating, safeServiceTaken, serviceKeywords, lang, highlights);
 
   try {
     const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, betterQuality ? 450 : 300);

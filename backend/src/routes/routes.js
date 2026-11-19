@@ -7,6 +7,7 @@ const redirectController = require("../controllers/redirectController");
 const aiController = require("../controllers/aiController");
 const authController = require("../controllers/authController");
 const uploadController = require("../controllers/uploadController");
+const customerPhotoController = require("../controllers/customerPhotoController");
 const planController = require("../controllers/planController");
 const paymentController = require("../controllers/paymentController");
 const { requireAuth, requireRole } = require("../middleware/auth");
@@ -35,6 +36,8 @@ function setupRoutes(app) {
   api.get("/shops/:shop_id/activity", requireAuth, feedbackController.listActivity);
   api.get("/shops/:shop_id/negative-reviews", requireAuth, feedbackController.listNegative);
   api.get("/shops/:shop_id/monthly-report", requireAuth, feedbackController.monthlyReport);
+  api.get("/shops/:shop_id/customer-photos", requireAuth, customerPhotoController.list);
+  api.delete("/shops/:shop_id/customer-photos/:photo_id", requireAuth, customerPhotoController.remove);
 
   // QR code endpoints
   api.post("/qr", requireAuth, requireRole("ADMIN", "SALESMAN"), qrCodeController.create);
@@ -47,6 +50,8 @@ function setupRoutes(app) {
 
   // Public — customer scans a QR code
   api.get("/qr/:qr_id/resolve", redirectController.resolve);
+  // Public — customer attaches up to 4 photos for the business (stored for the owner to see)
+  api.post("/qr/:qr_id/customer-photos", upload.array("photos", 4), customerPhotoController.upload);
 
   // Public — customer submits feedback / requests an AI review suggestion
   api.post("/feedback", feedbackController.submit);

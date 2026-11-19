@@ -11,14 +11,38 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&family=Roboto:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <script>
+      // The customer review page uses the semantic tokens below (see .rv-theme in index.css).
+      const rv = (name) => `rgb(var(--rv-${name}) / <alpha-value>)`;
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: { sans: ["Inter", "sans-serif"] },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              display: ["Outfit", "Roboto", "Noto Sans Devanagari", "sans-serif"],
+              review: ["Roboto", "Noto Sans Devanagari", "system-ui", "sans-serif"],
+            },
+            colors: {
+              background: rv("background"),
+              foreground: rv("foreground"),
+              card: rv("card"),
+              primary: rv("primary"),
+              "primary-foreground": rv("primary-foreground"),
+              muted: rv("muted"),
+              "muted-foreground": rv("muted-foreground"),
+              star: rv("star"),
+              "star-soft": rv("star-soft"),
+              lavender: rv("lavender"),
+              destructive: rv("destructive"),
+              border: rv("border"),
+            },
+            boxShadow: {
+              card: "0 12px 40px -12px rgba(30, 41, 59, 0.25)",
+              float: "0 6px 18px -4px rgba(30, 41, 59, 0.35)",
+            },
           },
         },
       };

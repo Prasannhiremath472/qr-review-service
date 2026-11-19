@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext.jsx";
 import { OwnerShopProvider } from "./auth/OwnerShopContext.jsx";
 import ProtectedRoute from "./auth/ProtectedRoute.jsx";
 import ReviewPage from "./pages/ReviewPage.jsx";
+import JoinPage from "./pages/JoinPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AdminOverviewPage from "./pages/AdminOverviewPage.jsx";
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/r/:qrId" element={<ReviewPage />} />
+          <Route path="/join" element={<JoinPage />} />
           <Route
             path="/dashboard/:shopId"
             element={

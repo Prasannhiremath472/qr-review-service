@@ -113,6 +113,7 @@ async function resolve(req, res) {
       contact_email: shop.contact_email || "",
       address: shop.address || "",
       owner_name: shop.owner_name || "",
+      is_verified: !!shop.is_verified,
     },
   });
 }

@@ -5,12 +5,56 @@ import {
   getReviewSuggestion,
   submitFeedback,
   sendFeedbackBeacon,
+  uploadCustomerPhotos,
 } from "../api/client.js";
 import SetupPage from "./SetupPage.jsx";
 import ServiceMultiSelect from "../components/ServiceMultiSelect.jsx";
-import PhotoLightbox from "../components/PhotoLightbox.jsx";
+import BusinessProfile from "../components/review/BusinessProfile.jsx";
+import InfinityBadge from "../components/review/InfinityBadge.jsx";
+import {
+  ArrowRightIcon,
+  BadgeCheckIcon,
+  CameraIcon,
+  CheckIcon,
+  CopyIcon,
+  GoogleG,
+  HeartIcon,
+  LanguagesIcon,
+  RefreshIcon,
+  SparklesIcon,
+  StarIcon,
+  UserIcon,
+  WhatsAppIcon,
+  XIcon,
+} from "../components/review/icons.jsx";
+import { LANGS, TAGS, UI, tagLabel } from "../lib/reviewI18n.js";
+import { compressImage } from "../lib/imageCompress.js";
 
-const RATING_LABELS = { 1: "Very Poor", 2: "Poor", 3: "Average", 4: "Good", 5: "Excellent" };
+// Converts a "#rrggbb" / "#rgb" brand colour to the space-separated RGB
+// channels the .rv-theme tokens use. Returns null for anything unparseable
+// so the default theme colour is kept.
+function hexToChannels(hex) {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((hex || "").trim());
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const n = parseInt(h, 16);
+  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
+}
+
+function themeStyle(brandColor) {
+  const channels = hexToChannels(brandColor);
+  return channels ? { "--rv-primary": channels } : undefined;
+}
+
+// Centered single-card layout for the loading / paused / error screens.
+function StatusShell({ children }) {
+  return (
+    <main className="rv-theme flex min-h-screen items-center justify-center p-4 font-review">
+      <div className="fade-in w-full max-w-sm rounded-3xl bg-card px-8 py-10 text-center shadow-card">{children}</div>
+    </main>
+  );
+}
 
 export default function ReviewPage() {
   const { qrId } = useParams();
@@ -49,51 +93,46 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="app-bg min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-4">
-          <div className="app-card overflow-hidden">
-            <div className="skeleton-block h-24 shimmer rounded-none" />
-            <div className="p-6 space-y-4">
-              <div className="skeleton-block h-4 w-1/2 mx-auto shimmer" />
-              <div className="skeleton-block h-10 w-56 mx-auto shimmer" />
-            </div>
+      <main className="rv-theme min-h-screen font-review sm:px-4 sm:py-8" aria-busy="true">
+        <div className="mx-auto w-full max-w-2xl overflow-hidden bg-card shadow-card sm:rounded-3xl">
+          <div className="shimmer aspect-[680/453] w-full" />
+          <div className="space-y-4 px-5 py-8 sm:px-10">
+            <div className="shimmer mx-auto h-5 w-1/2 rounded-full" />
+            <div className="shimmer mx-auto h-8 w-3/4 rounded-full" />
+            <div className="shimmer mx-auto h-10 w-56 rounded-full" />
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (paused) {
     return (
-      <div className="app-bg min-h-screen flex items-center justify-center p-4">
-        <div className="app-card fade-in max-w-sm w-full text-center px-8 py-10">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-5">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-            </svg>
-          </div>
-          <h1 className="text-lg font-semibold text-zinc-900 mb-1.5">Temporarily Unavailable</h1>
-          <p className="text-sm text-zinc-500">
-            This business's review service is temporarily paused. Please check back later.
-          </p>
+      <StatusShell>
+        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-star-soft text-star">
+          <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+          </svg>
         </div>
-      </div>
+        <h1 className="mb-1.5 font-display text-lg font-semibold text-foreground">Temporarily Unavailable</h1>
+        <p className="text-sm text-muted-foreground">
+          This business's review service is temporarily paused. Please check back later.
+        </p>
+      </StatusShell>
     );
   }
 
   if (error) {
     return (
-      <div className="app-bg min-h-screen flex items-center justify-center p-4">
-        <div className="app-card fade-in max-w-sm w-full text-center px-8 py-10">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-5">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-          </div>
-          <h1 className="text-lg font-semibold text-zinc-900 mb-1.5">Oops!</h1>
-          <p className="text-sm text-zinc-500">{error}</p>
+      <StatusShell>
+        <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
         </div>
-      </div>
+        <h1 className="mb-1.5 font-display text-lg font-semibold text-foreground">Oops!</h1>
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </StatusShell>
     );
   }
 
@@ -107,12 +146,31 @@ export default function ReviewPage() {
 const TYPING_CHARS_PER_TICK = 1;
 const TYPING_TICK_MS = 32;
 const SERVICE_DEBOUNCE_MS = 1000;
+const FALLBACK_REVIEW = "Had a wonderful experience! Great service and would definitely recommend.";
+const MAX_PHOTOS = 4;
+const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
+
+// Copies text to the clipboard; never rejects (e.g. blocked or insecure context).
+function copyToClipboard(text) {
+  try {
+    return navigator.clipboard.writeText(text).catch(() => {});
+  } catch (err) {
+    return Promise.resolve();
+  }
+}
 
 function ReviewFlow({ shopInfo, qrId }) {
   const [customerName, setCustomerName] = useState("");
   const [selectedServices, setSelectedServices] = useState([]);
   const serviceTaken = selectedServices.join(", ");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [photos, setPhotos] = useState([]); // [{ id, file, preview }]
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [closed, setClosed] = useState(false);
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [lang, setLang] = useState("en"); // page UI language
+  const [reviewLang, setReviewLang] = useState("en"); // language the AI writes the review in
   const [step, setStep] = useState("review"); // review | negative | thankyou
   const [reviewText, setReviewText] = useState("");
   const [typedText, setTypedText] = useState("");
@@ -126,6 +184,11 @@ function ReviewFlow({ shopInfo, qrId }) {
   const serviceDebounceRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const requestIdRef = useRef(0);
+  const reviewLangRef = useRef("en");
+  const photosRef = useRef([]);
+  photosRef.current = photos;
+
+  const t = UI[lang];
 
   useEffect(() => {
     if (rating >= 4 && !fetchedOnce.current) {
@@ -135,6 +198,7 @@ function ReviewFlow({ shopInfo, qrId }) {
     return () => {
       clearTimeout(serviceDebounceRef.current);
       clearInterval(typingIntervalRef.current);
+      photosRef.current.forEach((p) => URL.revokeObjectURL(p.preview));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -156,9 +220,10 @@ function ReviewFlow({ shopInfo, qrId }) {
     }, TYPING_TICK_MS);
   }
 
-  async function fetchSuggestion(serviceOverride) {
+  async function fetchSuggestion({ service, language, highlights } = {}) {
     const requestId = ++requestIdRef.current;
     setSuggestionLoading(true);
+    setCopied(false);
     try {
       const { data } = await getReviewSuggestion({
         shop_id: shopInfo.shop_id,
@@ -166,22 +231,20 @@ function ReviewFlow({ shopInfo, qrId }) {
         business_type: shopInfo.business_type || "business",
         city: shopInfo.city || "your city",
         rating,
-        service_taken: (serviceOverride ?? serviceTaken).trim(),
+        service_taken: (service ?? serviceTaken).trim(),
+        highlights: highlights ?? selectedTags,
+        language: language ?? reviewLangRef.current,
       });
       if (requestId !== requestIdRef.current) return; // a newer request superseded this one
-      const text =
-        data.success && data.data && data.data.review
-          ? data.data.review
-          : "Had a wonderful experience! Great service and would definitely recommend.";
+      const text = data.success && data.data && data.data.review ? data.data.review : FALLBACK_REVIEW;
       setReviewText(text);
       setSuggestionLoading(false);
       playTypingAnimation(text);
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
-      const text = "Had a wonderful experience! Great service and would definitely recommend.";
-      setReviewText(text);
+      setReviewText(FALLBACK_REVIEW);
       setSuggestionLoading(false);
-      playTypingAnimation(text);
+      playTypingAnimation(FALLBACK_REVIEW);
     }
   }
 
@@ -198,6 +261,24 @@ function ReviewFlow({ shopInfo, qrId }) {
     }
   }
 
+  // Changing the review language rewrites the review in that language.
+  function handleReviewLangChange(code) {
+    if (code === reviewLangRef.current) return;
+    reviewLangRef.current = code;
+    setReviewLang(code);
+    if (rating >= 4) {
+      clearTimeout(serviceDebounceRef.current);
+      fetchedOnce.current = true;
+      fetchSuggestion({ language: code });
+    }
+  }
+
+  // The page language drives both the UI wording and the review language.
+  function handlePageLangChange(code) {
+    setLang(code);
+    handleReviewLangChange(code);
+  }
+
   // Regenerates the AI review a moment after the customer's service
   // selection settles (toggling a chip or adding a custom one), using the
   // selected services to make the review more specific.
@@ -209,37 +290,92 @@ function ReviewFlow({ shopInfo, qrId }) {
     serviceDebounceRef.current = setTimeout(() => {
       if (joined.trim()) {
         fetchedOnce.current = true;
-        fetchSuggestion(joined);
+        fetchSuggestion({ service: joined });
       }
     }, SERVICE_DEBOUNCE_MS);
   }
 
+  // Same debounced regeneration as services: the AI weaves the liked
+  // qualities into the review a moment after the selection settles.
+  function handleTagsChange(nextTags) {
+    setSelectedTags(nextTags);
+    if (rating < 4) return;
+    clearTimeout(serviceDebounceRef.current);
+    serviceDebounceRef.current = setTimeout(() => {
+      if (nextTags.length > 0) {
+        fetchedOnce.current = true;
+        fetchSuggestion({ highlights: nextTags });
+      }
+    }, SERVICE_DEBOUNCE_MS);
+  }
+
+  function handlePhotosPicked(e) {
+    const picked = Array.from(e.target.files || []).filter(
+      (f) => f.type.startsWith("image/") && f.size <= MAX_PHOTO_BYTES,
+    );
+    e.target.value = "";
+    setPhotos((prev) => {
+      const room = MAX_PHOTOS - prev.length;
+      const added = picked.slice(0, Math.max(0, room)).map((file) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      return [...prev, ...added];
+    });
+  }
+
+  function removePhoto(id) {
+    setPhotos((prev) => {
+      const gone = prev.find((p) => p.id === id);
+      if (gone) URL.revokeObjectURL(gone.preview);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
+
   function copyReview() {
-    navigator.clipboard.writeText(reviewText).then(() => {
+    copyToClipboard(reviewText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
 
-  function copyAndContinue() {
+  async function copyAndContinue() {
     setContinuing(true);
+    // Start the copy inside the click so the browser still counts it as a user gesture.
+    const copyDone = copyToClipboard(reviewText);
+
+    const extras = [
+      customerName.trim() ? ` (name: ${customerName.trim()})` : "",
+      serviceTaken.trim() ? `, service: ${serviceTaken.trim()}` : "",
+      selectedTags.length ? `, liked: ${selectedTags.join(", ")}` : "",
+      photos.length ? `, photos: ${photos.length}` : "",
+    ].join("");
     const payload = {
       shop_id: shopInfo.shop_id,
       qr_code_id: qrId,
       rating,
-      message: `Redirected to Google Review${customerName.trim() ? ` (name: ${customerName.trim()})` : ""}${
-        serviceTaken.trim() ? `, service: ${serviceTaken.trim()}` : ""
-      }`,
+      message: `Redirected to Google Review${extras}`,
     };
 
-    const redirect = () => {
-      sendFeedbackBeacon(payload);
-      setTimeout(() => {
-        window.location.href = shopInfo.review_url;
-      }, 600);
-    };
+    // Photos upload before the redirect, but never block it: a failed or
+    // slow upload (it aborts after 20s) still sends the customer to Google.
+    if (photos.length > 0) {
+      setUploadingPhotos(true);
+      try {
+        const files = await Promise.all(photos.map((p) => compressImage(p.file)));
+        await uploadCustomerPhotos(qrId, files);
+      } catch (err) {
+        // ignore — the review itself is what matters
+      }
+      setUploadingPhotos(false);
+    }
 
-    navigator.clipboard.writeText(reviewText).then(redirect).catch(redirect);
+    await copyDone;
+    sendFeedbackBeacon(payload);
+    setTimeout(() => {
+      window.location.href = shopInfo.review_url;
+    }, 600);
   }
 
   async function handleSubmitFeedback() {
@@ -263,580 +399,415 @@ function ReviewFlow({ shopInfo, qrId }) {
     ? `https://wa.me/${shopInfo.whatsapp_number.replace(/[^0-9]/g, "")}`
     : "";
 
-  const brandColor = shopInfo.brand_color || "";
-  const brandStyle = brandColor ? { "--brand-color": brandColor } : undefined;
+  const activeRating = hoverRating || rating;
+  const showChips = step === "review";
+
+  if (closed) {
+    return (
+      <main
+        className="rv-theme flex min-h-screen items-center justify-center p-6 text-center font-review"
+        style={themeStyle(shopInfo.brand_color)}
+      >
+        <div className="fade-in">
+          <p className="font-display text-2xl font-semibold text-foreground">
+            {t.visitThanks.replace("{name}", shopInfo.shop_name)}
+          </p>
+          <button
+            type="button"
+            onClick={() => setClosed(false)}
+            className="mt-4 rounded text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            {t.backToReview}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="app-bg min-h-screen flex flex-col items-center p-4 py-8 sm:p-6" style={brandStyle}>
-      <div className="max-w-md w-full">
-        <div className="app-card overflow-hidden fade-in">
-          <div
-            className={`px-6 py-6 text-white relative overflow-hidden ${
-              brandColor ? "" : "bg-gradient-to-br from-violet-600 via-violet-600 to-purple-700"
-            }`}
-            style={brandColor ? { background: brandColor } : undefined}
+    <main className="rv-theme min-h-screen overflow-x-hidden font-review sm:px-4 sm:py-8" style={themeStyle(shopInfo.brand_color)}>
+      <div className="fade-in mx-auto w-full max-w-2xl overflow-hidden bg-card shadow-card sm:rounded-3xl">
+        {/* ---------- Header ---------- */}
+        <header className="relative">
+          {shopInfo.photo_url ? (
+            <img
+              src={shopInfo.photo_url}
+              alt={shopInfo.shop_name}
+              width={680}
+              height={453}
+              className="aspect-[680/453] w-full object-cover"
+            />
+          ) : (
+            <div className="h-44 w-full bg-primary sm:h-56" />
+          )}
+          <svg
+            viewBox="0 0 400 40"
+            preserveAspectRatio="none"
+            className="absolute -bottom-px left-0 h-8 w-full fill-card sm:h-12"
+            aria-hidden="true"
           >
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
-            <div className="absolute -bottom-10 -left-6 w-24 h-24 rounded-full bg-white/10" />
-            <div className="flex items-center gap-3.5 relative">
-              {shopInfo.logo_url ? (
-                <img
-                  src={shopInfo.logo_url}
-                  alt={`${shopInfo.shop_name} logo`}
-                  className="w-[52px] h-[52px] rounded-2xl object-cover flex-shrink-0 bg-white/20"
-                />
-              ) : (
-                <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0">
-                  {shopInfo.shop_name?.[0]}
-                </div>
-              )}
-              <div className="min-w-0">
-                <h1 className="text-lg font-bold leading-tight truncate">{shopInfo.shop_name}</h1>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-amber-300 text-sm tracking-tight">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-                  <span className="text-white/70 text-xs">Google Reviews</span>
-                </div>
-              </div>
-            </div>
+            <path d="M0 22 C80 2 140 40 220 26 S340 8 400 20 V40 H0Z" />
+          </svg>
+
+          <button
+            type="button"
+            onClick={() => setClosed(true)}
+            aria-label={t.closeAria}
+            className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-card text-foreground shadow-md transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            <XIcon className="h-5 w-5" />
+          </button>
+
+          <div
+            className="absolute right-16 top-3 flex h-10 items-center gap-0.5 rounded-full bg-card p-1 shadow-md"
+            role="group"
+            aria-label={t.pageLanguage}
+          >
+            <LanguagesIcon className="mx-1.5 h-4 w-4 text-muted-foreground" />
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => handlePageLangChange(l.code)}
+                aria-pressed={lang === l.code}
+                className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                  lang === l.code ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
+                }`}
+              >
+                {l.short}
+              </button>
+            ))}
           </div>
 
-          <div className="px-5 py-6 sm:px-7">
-            <div className="space-y-3.5 mb-5">
-              <div>
-                <label className="block text-xs font-medium text-zinc-500 mb-1.5">Your Name</label>
+          <div className="absolute bottom-10 right-3 flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-md sm:bottom-14 sm:right-5 sm:px-4 sm:py-2 sm:text-sm">
+            <GoogleG className="h-4 w-4" /> {t.poweredByGoogle}
+          </div>
+
+          <div className="absolute left-4 top-4 sm:left-8 sm:top-8">
+            <div className="relative">
+            {shopInfo.logo_url ? (
+              <img
+                src={shopInfo.logo_url}
+                alt={`${shopInfo.shop_name} logo`}
+                width={160}
+                height={160}
+                className="h-24 w-24 rounded-full border-4 border-card bg-card object-cover shadow-lg sm:h-36 sm:w-36"
+              />
+            ) : (
+              <div className="grid h-24 w-24 place-items-center rounded-full border-4 border-card bg-card font-display text-4xl font-bold text-primary shadow-lg sm:h-36 sm:w-36 sm:text-6xl">
+                {shopInfo.shop_name?.[0]}
+              </div>
+            )}
+            {shopInfo.is_verified && (
+              <span
+                className="absolute bottom-1 right-1 grid h-7 w-7 place-items-center rounded-full bg-card shadow sm:h-9 sm:w-9"
+                role="img"
+                aria-label={t.verified}
+                title={t.verified}
+              >
+                <BadgeCheckIcon className="h-5 w-5 fill-primary text-primary-foreground sm:h-7 sm:w-7" />
+              </span>
+            )}
+            </div>
+          </div>
+        </header>
+
+        <div className="relative px-5 pb-6 pt-4 sm:px-10">
+          {/* ---------- Rating ---------- */}
+          <section className="text-center">
+            <p className="mb-4 font-display text-lg font-semibold text-foreground">{shopInfo.shop_name}</p>
+            <h1 className="font-display text-2xl font-bold text-foreground sm:text-4xl">{t.rateTitle}</h1>
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:text-lg">
+              {t.rateHelp} <HeartIcon className="h-4 w-4 shrink-0 text-destructive sm:h-5 sm:w-5" />
+            </p>
+            <div
+              className="mt-6 flex items-center justify-center gap-1 sm:gap-3"
+              role="group"
+              aria-label={t.ratingAria}
+              onMouseLeave={() => setHoverRating(0)}
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => handleSetRating(n)}
+                  onMouseEnter={() => setHoverRating(n)}
+                  onFocus={() => setHoverRating(n)}
+                  onBlur={() => setHoverRating(0)}
+                  aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                  aria-pressed={rating === n}
+                  className="grid h-12 w-12 place-items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                >
+                  <StarIcon
+                    filled={n <= activeRating}
+                    className={`h-9 w-9 transition-colors motion-reduce:transition-none ${
+                      n <= activeRating ? "text-star" : "text-muted-foreground"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 h-10 py-2 text-base font-medium text-muted-foreground" aria-live="polite">
+              {t.ratings[activeRating]}
+            </p>
+          </section>
+
+          {/* ---------- Name + services ---------- */}
+          {showChips && (
+            <section className="mt-2 grid gap-4">
+              <label className="relative block">
+                <span className="sr-only">{t.name}</span>
+                <UserIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Optional"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="field-input w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50/60"
+                  placeholder={t.name}
+                  className="w-full rounded-2xl border border-lavender bg-muted/40 py-3 pl-11 pr-4 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
                 />
-              </div>
+              </label>
               <ServiceMultiSelect
-                options={shopInfo.services}
+                options={shopInfo.services || []}
                 selected={selectedServices}
                 onChange={handleServicesChange}
-                brandColor={brandColor}
+                t={t}
               />
-            </div>
+            </section>
+          )}
 
-            <div className="text-center mb-6">
-              <p className="text-zinc-500 text-sm mb-3.5">Rate your experience</p>
-              <div className="flex justify-center gap-1.5 sm:gap-2">
-                {[1, 2, 3, 4, 5].map((n) => (
+          {/* ---------- What did you like? ---------- */}
+          {showChips && (
+            <section className="mt-6">
+              <ServiceMultiSelect
+                options={TAGS}
+                selected={selectedTags}
+                onChange={handleTagsChange}
+                t={t}
+                title={t.liked}
+                showOptional={false}
+                icon={<SparklesIcon className="h-5 w-5 fill-star text-star" />}
+                renderOption={(tag) => tagLabel(lang, tag)}
+              />
+            </section>
+          )}
+
+          {/* ---------- Ready-made review ---------- */}
+          {step === "review" && (
+            <section className="mt-6">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-display font-semibold text-foreground">{t.ready}</h3>
+                <button
+                  type="button"
+                  onClick={() => fetchSuggestion()}
+                  disabled={suggestionLoading || isTyping}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  <RefreshIcon className="h-3.5 w-3.5" /> {t.newSuggestion}
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={t.reviewLang}>
+                <span className="text-xs text-muted-foreground">{t.reviewLang}:</span>
+                {LANGS.map((l) => (
                   <button
-                    key={n}
+                    key={l.code}
                     type="button"
-                    aria-label={`${n} star${n > 1 ? "s" : ""}`}
-                    className={`star text-4xl sm:text-[2.75rem] ${n <= rating ? "active" : "inactive"}`}
-                    onClick={() => handleSetRating(n)}
+                    onClick={() => handleReviewLangChange(l.code)}
+                    aria-pressed={reviewLang === l.code}
+                    className={`rounded-full border px-3 py-1 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                      reviewLang === l.code
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-lavender text-foreground hover:bg-muted"
+                    }`}
                   >
-                    &#9733;
+                    {l.label}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-violet-600 font-semibold mt-2 tracking-wide">{RATING_LABELS[rating]}</p>
-            </div>
 
-            {step === "review" && (
-              <div>
+              <div className="mt-2 rounded-2xl border border-lavender bg-muted/40 p-4">
                 {suggestionLoading ? (
-                  <div className="mb-4">
-                    <div className="review-card rounded-2xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex gap-1">
-                          <span className="pulse-dot w-2 h-2 bg-violet-500 rounded-full inline-block"></span>
-                          <span className="pulse-dot w-2 h-2 bg-violet-400 rounded-full inline-block" style={{ animationDelay: "0.3s" }}></span>
-                          <span className="pulse-dot w-2 h-2 bg-violet-300 rounded-full inline-block" style={{ animationDelay: "0.6s" }}></span>
-                        </div>
-                        <span className="text-sm text-violet-600 font-medium">Writing your review...</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="shimmer h-4 rounded-full w-full"></div>
-                        <div className="shimmer h-4 rounded-full w-11/12"></div>
-                        <div className="shimmer h-4 rounded-full w-4/5"></div>
-                        <div className="shimmer h-4 rounded-full w-9/12"></div>
-                      </div>
+                  <div role="status">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="flex gap-1" aria-hidden="true">
+                        <span className="pulse-dot inline-block h-2 w-2 rounded-full bg-primary" />
+                        <span className="pulse-dot inline-block h-2 w-2 rounded-full bg-primary/70" style={{ animationDelay: "0.3s" }} />
+                        <span className="pulse-dot inline-block h-2 w-2 rounded-full bg-primary/40" style={{ animationDelay: "0.6s" }} />
+                      </span>
+                      <span className="text-sm font-medium text-primary">{t.writing}</span>
+                    </div>
+                    <div className="space-y-2" aria-hidden="true">
+                      <div className="shimmer h-4 w-full rounded-full" />
+                      <div className="shimmer h-4 w-11/12 rounded-full" />
+                      <div className="shimmer h-4 w-4/5 rounded-full" />
+                      <div className="shimmer h-4 w-9/12 rounded-full" />
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <div className="slide-up mb-4">
-                      <div className="review-card rounded-2xl p-4 relative">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide flex items-center gap-1.5">
-                            {isTyping && (
-                              <span className="flex gap-0.5">
-                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-500 rounded-full inline-block"></span>
-                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-400 rounded-full inline-block" style={{ animationDelay: "0.2s" }}></span>
-                                <span className="pulse-dot w-1.5 h-1.5 bg-violet-300 rounded-full inline-block" style={{ animationDelay: "0.4s" }}></span>
-                              </span>
-                            )}
-                            {isTyping ? "AI is writing..." : "Your Review"}
-                          </span>
-                          <button
-                            onClick={copyReview}
-                            disabled={isTyping}
-                            className="btn-ghost flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 px-2 py-1 rounded-lg hover:bg-violet-100 disabled:opacity-40"
-                          >
-                            {copied ? (
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                            )}
-                            <span>{copied ? "Copied!" : "Copy"}</span>
-                          </button>
-                        </div>
-                        <p className="w-full text-[15px] text-zinc-700 leading-relaxed whitespace-pre-wrap min-h-[7.5rem]">
-                          {typedText}
-                          {isTyping && <span className="typing-cursor">|</span>}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="slide-up">
-                      <button
-                        onClick={copyAndContinue}
-                        disabled={continuing || isTyping}
-                        className={`w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2 disabled:opacity-60 ${
-                          brandColor ? "" : "btn-gradient"
-                        }`}
-                        style={brandColor ? { background: brandColor } : undefined}
-                      >
-                        {continuing ? (
-                          <>
-                            <Spinner />
-                            Copied! Redirecting...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Copy Review &amp; Continue
-                          </>
-                        )}
-                      </button>
-                      <p className="text-xs text-zinc-400 text-center mt-3">
-                        Review will be copied. Paste it on Google Reviews page.
-                      </p>
-                    </div>
-                  </>
+                  <p className="min-h-[7.5rem] whitespace-pre-wrap text-base leading-relaxed text-foreground">
+                    “{typedText}
+                    {isTyping ? <span className="typing-cursor">|</span> : "”"}
+                  </p>
                 )}
-              </div>
-            )}
-
-            {step === "negative" && (
-              <div className="fade-in">
-                <div className="review-card rounded-2xl p-4 mb-4">
-                  <p className="text-sm font-semibold text-zinc-700 mb-1.5">We value your feedback</p>
-                  <p className="text-xs text-zinc-500 mb-3">Tell us how we can improve your experience</p>
-                  <textarea
-                    rows={4}
-                    placeholder="Share your thoughts..."
-                    value={feedbackMessage}
-                    onChange={(e) => setFeedbackMessage(e.target.value)}
-                    className="field-input w-full p-3 bg-white border border-violet-200 rounded-xl text-[15px] text-zinc-700 placeholder-zinc-400 resize-none"
-                  />
-                </div>
                 <button
-                  onClick={handleSubmitFeedback}
-                  disabled={submittingFeedback}
-                  className="btn-gradient w-full text-white py-4 rounded-2xl font-semibold text-[15px] flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={copyReview}
+                  disabled={suggestionLoading || isTyping}
+                  className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full border-2 px-4 py-3 text-base font-semibold transition disabled:opacity-40 ${
+                    copied
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-primary bg-card text-primary hover:bg-primary/10"
+                  }`}
                 >
-                  {submittingFeedback ? (
-                    <>
-                      <Spinner />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Feedback"
-                  )}
+                  {copied ? <CheckIcon className="h-5 w-5" /> : <CopyIcon className="h-5 w-5" />}
+                  {copied ? t.copied : isTyping ? t.aiWriting : t.copy}
                 </button>
               </div>
-            )}
 
-            {step === "thankyou" && (
-              <div className="fade-in text-center py-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 pop-in">
-                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
+              <ol className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
+                {t.steps.map((st, i) => (
+                  <li key={st}>
+                    <span className="font-semibold text-foreground">{i + 1}.</span> {st}
+                  </li>
+                ))}
+              </ol>
+
+              <button
+                type="button"
+                onClick={copyAndContinue}
+                disabled={continuing || isTyping || suggestionLoading}
+                className="mx-auto mt-6 flex w-full max-w-md items-center justify-center gap-3 rounded-full bg-primary px-5 py-4 text-base font-medium text-primary-foreground shadow-float transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
+              >
+                {continuing ? (
+                  <>
+                    <Spinner />
+                    {uploadingPhotos ? t.uploadingPhotos : t.redirecting}
+                  </>
+                ) : (
+                  <>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-card">
+                      <GoogleG className="h-4 w-4" />
+                    </span>
+                    {t.cta} <ArrowRightIcon className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+              <p className="mt-2 text-center text-xs text-muted-foreground">{t.ctaHint}</p>
+
+              {/* ---------- Photos ---------- */}
+              <div className="mt-6 rounded-2xl border-2 border-dashed border-lavender bg-muted/40 p-4 sm:p-5">
+                <div className="flex items-center gap-3">
+                  {photos.length < MAX_PHOTOS && (
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-4 rounded-lg focus-within:ring-2 focus-within:ring-primary/60">
+                      <CameraIcon className="h-10 w-10 shrink-0 text-primary" strokeWidth={1.75} />
+                      <span className="min-w-0">
+                        <span className="block text-lg font-medium text-foreground">{t.addPhotos}</span>
+                        <span className="block text-sm text-muted-foreground">{t.photosHint}</span>
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotosPicked}
+                        disabled={continuing}
+                        className="sr-only"
+                      />
+                    </label>
+                  )}
+                  <div className="flex shrink-0 gap-2">
+                    {photos.map((p, i) => (
+                      <div key={p.id} className="relative h-16 w-16 overflow-hidden rounded-xl sm:h-24 sm:w-28">
+                        <img src={p.preview} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(p.id)}
+                          disabled={continuing}
+                          aria-label={t.removePhoto}
+                          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-foreground/80 text-card"
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-zinc-900 mb-1.5">Thank You!</h2>
-                <p className="text-zinc-500 text-sm">Your feedback means a lot to us.</p>
+                <p className="mt-3 text-xs text-muted-foreground">{t.photosShared}</p>
               </div>
-            )}
-          </div>
+            </section>
+          )}
+
+          {/* ---------- Low rating: private feedback ---------- */}
+          {step === "negative" && (
+            <section className="fade-in mt-4">
+              <div className="rounded-2xl border border-lavender bg-muted/40 p-4">
+                <p className="font-display font-semibold text-foreground">{t.feedbackTitle}</p>
+                <p className="mb-3 mt-1 text-sm text-muted-foreground">{t.feedbackHelp}</p>
+                <textarea
+                  rows={4}
+                  placeholder={t.feedbackPlaceholder}
+                  aria-label={t.feedbackTitle}
+                  value={feedbackMessage}
+                  onChange={(e) => setFeedbackMessage(e.target.value)}
+                  className="w-full resize-none rounded-xl border border-lavender bg-card p-3 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSubmitFeedback}
+                disabled={submittingFeedback}
+                className="mx-auto mt-5 flex w-full max-w-md items-center justify-center gap-2 rounded-full bg-primary px-5 py-4 text-base font-medium text-primary-foreground shadow-float transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
+              >
+                {submittingFeedback ? (
+                  <>
+                    <Spinner />
+                    {t.submitting}
+                  </>
+                ) : (
+                  t.submitFeedback
+                )}
+              </button>
+            </section>
+          )}
+
+          {/* ---------- Thank you ---------- */}
+          {step === "thankyou" && (
+            <section className="fade-in py-6 text-center">
+              <div className="pop-in mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-primary/10 text-primary">
+                <CheckIcon className="h-8 w-8" />
+              </div>
+              <h2 className="mb-1.5 font-display text-xl font-bold text-foreground">{t.thanks}</h2>
+              <p className="text-sm text-muted-foreground">{t.thanksHelp}</p>
+            </section>
+          )}
         </div>
 
-        <BusinessInfoSection shopInfo={shopInfo} brandColor={brandColor} />
-
-        <p className="text-center text-xs text-zinc-400 mt-5">Powered by Infinity Technology Hub</p>
+        <BusinessProfile shopInfo={shopInfo} t={t} />
       </div>
+
+      <p className="px-4 pb-24 pt-5 text-center text-xs text-muted-foreground sm:pb-4">{t.poweredBy}</p>
+
+      <InfinityBadge t={t} />
 
       {whatsappHref && (
         <a
           href={whatsappHref}
           target="_blank"
           rel="noreferrer"
-          aria-label="Chat on WhatsApp"
-          className="fixed bottom-5 right-5 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/40 flex items-center justify-center transition-transform hover:scale-105 z-20"
+          aria-label={t.chatWhatsApp}
+          className="fixed bottom-5 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-float transition-transform hover:scale-105 hover:bg-emerald-600"
         >
-          <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 004.79 1.22h.004c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.85 9.85 0 0012.04 2zm0 18.15h-.003a8.2 8.2 0 01-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 01-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 012.41 5.83c0 4.55-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.4-.12-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.36-.77-1.86-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.11-.23-.17-.48-.29z" />
-          </svg>
+          <WhatsAppIcon className="h-7 w-7" />
         </a>
       )}
-    </div>
-  );
-}
-
-function BusinessInfoSection({ shopInfo, brandColor }) {
-  const hasPhoto = !!shopInfo.photo_url;
-  const hasGallery = Array.isArray(shopInfo.gallery_photos) && shopInfo.gallery_photos.length > 0;
-  const hasAboutUs = !!shopInfo.about_us;
-  const hasStructuredHours = Array.isArray(shopInfo.business_hours) && shopInfo.business_hours.length > 0;
-  const hasHours = hasStructuredHours || !!shopInfo.open_hours;
-  const hasAddress = !!shopInfo.address;
-  const hasContact = shopInfo.contact_phone || shopInfo.contact_email || shopInfo.whatsapp_number;
-  const hasFooterInfo = shopInfo.owner_name || hasContact || hasAddress;
-
-  const [lightboxIndex, setLightboxIndex] = useState(null);
-
-  if (!hasPhoto && !hasGallery && !hasAboutUs && !hasHours && !hasFooterInfo) {
-    return null;
-  }
-
-  const mapsHref = hasAddress
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shopInfo.address)}`
-    : "";
-  const waHref = shopInfo.whatsapp_number ? `https://wa.me/${shopInfo.whatsapp_number.replace(/[^0-9]/g, "")}` : "";
-
-  return (
-    <div className="app-card overflow-hidden fade-in mt-5">
-      {/* ---------- Hero ---------- */}
-      <div className="relative">
-        {hasPhoto ? (
-          <div className="relative h-52 sm:h-64">
-            <img src={shopInfo.photo_url} alt={shopInfo.shop_name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          </div>
-        ) : (
-          <div
-            className="h-32 sm:h-36"
-            style={{ background: brandColor || "linear-gradient(135deg, #7c3aed, #4c1d95)" }}
-          />
-        )}
-
-        <div className={`flex items-end gap-3.5 px-5 sm:px-7 ${hasPhoto ? "absolute bottom-0 left-0 right-0 pb-4" : "-mt-9 pb-2"}`}>
-          {shopInfo.logo_url ? (
-            <img
-              src={shopInfo.logo_url}
-              alt={`${shopInfo.shop_name} logo`}
-              className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 ring-4 ring-white shadow-lg bg-white"
-            />
-          ) : (
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0 ring-4 ring-white shadow-lg text-white"
-              style={{ background: brandColor || "#7c3aed" }}
-            >
-              {shopInfo.shop_name?.[0]}
-            </div>
-          )}
-          <div className="min-w-0 pb-0.5">
-            <h2 className={`text-lg sm:text-xl font-bold leading-tight truncate ${hasPhoto ? "text-white drop-shadow-sm" : "text-zinc-900"}`}>
-              {shopInfo.shop_name}
-            </h2>
-            {shopInfo.business_type && (
-              <p className={`text-xs sm:text-sm capitalize ${hasPhoto ? "text-white/80" : "text-zinc-500"}`}>
-                {shopInfo.business_type.replace(/_/g, " ")}
-                {shopInfo.city ? ` · ${shopInfo.city}` : ""}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ---------- Quick actions ---------- */}
-      {(hasContact || hasAddress) && (
-        <div className="flex items-start justify-center gap-3 sm:gap-5 px-5 sm:px-7 py-4 overflow-x-auto border-b border-zinc-100">
-          {shopInfo.contact_phone && (
-            <QuickAction href={`tel:${shopInfo.contact_phone}`} label="Call" icon="phone" />
-          )}
-          {waHref && <QuickAction href={waHref} label="WhatsApp" icon="whatsapp" external />}
-          {mapsHref && <QuickAction href={mapsHref} label="Directions" icon="pin" external />}
-          {shopInfo.contact_email && (
-            <QuickAction href={`mailto:${shopInfo.contact_email}`} label="Email" icon="mail" />
-          )}
-        </div>
-      )}
-
-      {/* ---------- About ---------- */}
-      {hasAboutUs && (
-        <div className="px-5 sm:px-7 pt-5">
-          <SectionHeading>About</SectionHeading>
-          <p className="text-sm text-zinc-600 leading-relaxed">{shopInfo.about_us}</p>
-        </div>
-      )}
-
-      {/* ---------- Gallery ---------- */}
-      {hasGallery && (
-        <div className="px-5 sm:px-7 pt-5">
-          <SectionHeading>Gallery</SectionHeading>
-          <div className="grid grid-cols-3 gap-2">
-            {shopInfo.gallery_photos.map((url, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setLightboxIndex(i)}
-                className="group relative aspect-square rounded-xl overflow-hidden"
-              >
-                <img
-                  src={url}
-                  alt={`${shopInfo.shop_name} photo ${i + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ---------- Hours ---------- */}
-      {hasHours && (
-        <div className="px-5 sm:px-7 pt-5">
-          <SectionHeading>Hours</SectionHeading>
-          {hasStructuredHours ? (
-            <WeeklyHours businessHours={shopInfo.business_hours} brandColor={brandColor} />
-          ) : (
-            <p className="text-sm text-zinc-600 flex items-center gap-2">
-              <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-              </svg>
-              {shopInfo.open_hours}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ---------- Contact & location ---------- */}
-      {hasFooterInfo && (
-        <div className="px-5 sm:px-7 pt-5 pb-5 mt-5 bg-zinc-50 border-t border-zinc-100 space-y-3">
-          <SectionHeading>Contact</SectionHeading>
-          <div className="space-y-2.5">
-            {shopInfo.owner_name && <InfoRow icon="user">{shopInfo.owner_name}</InfoRow>}
-            {shopInfo.contact_phone && (
-              <InfoRow icon="phone">
-                <a href={`tel:${shopInfo.contact_phone}`} className="hover:text-violet-600">
-                  {shopInfo.contact_phone}
-                </a>
-              </InfoRow>
-            )}
-            {shopInfo.contact_email && (
-              <InfoRow icon="mail">
-                <a href={`mailto:${shopInfo.contact_email}`} className="hover:text-violet-600 break-all">
-                  {shopInfo.contact_email}
-                </a>
-              </InfoRow>
-            )}
-            {hasAddress && (
-              <InfoRow icon="pin">
-                {mapsHref ? (
-                  <a href={mapsHref} target="_blank" rel="noreferrer" className="hover:text-violet-600">
-                    {shopInfo.address}
-                  </a>
-                ) : (
-                  shopInfo.address
-                )}
-              </InfoRow>
-            )}
-          </div>
-        </div>
-      )}
-
-      {lightboxIndex !== null && (
-        <PhotoLightbox
-          photos={shopInfo.gallery_photos}
-          index={lightboxIndex}
-          onIndexChange={setLightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          altPrefix={shopInfo.shop_name}
-        />
-      )}
-    </div>
-  );
-}
-
-function SectionHeading({ children }) {
-  return <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2.5">{children}</h3>;
-}
-
-const QUICK_ACTION_ICONS = {
-  phone: (
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-  ),
-  mail: (
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-  ),
-  pin: (
-    <>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-    </>
-  ),
-  user: (
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.964 0a9 9 0 10-11.964 0m11.964 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-  ),
-};
-
-const QUICK_ACTION_STYLES = {
-  phone: "bg-violet-50 text-violet-600 group-hover:bg-violet-100",
-  whatsapp: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100",
-  pin: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
-  mail: "bg-amber-50 text-amber-600 group-hover:bg-amber-100",
-};
-
-function QuickAction({ href, label, icon, external }) {
-  return (
-    <a
-      href={href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noreferrer" : undefined}
-      className="group flex-shrink-0 w-[72px] flex flex-col items-center gap-1.5"
-    >
-      <span
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${QUICK_ACTION_STYLES[icon]}`}
-      >
-        {icon === "whatsapp" ? (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 004.79 1.22h.004c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.85 9.85 0 0012.04 2zm0 18.15h-.003a8.2 8.2 0 01-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 01-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 012.41 5.83c0 4.55-3.7 8.24-8.24 8.24zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.4-.12-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.36-.77-1.86-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.06 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.11-.23-.17-.48-.29z" />
-          </svg>
-        ) : (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {QUICK_ACTION_ICONS[icon]}
-          </svg>
-        )}
-      </span>
-      <span className="text-[11px] font-medium text-zinc-600 whitespace-nowrap">{label}</span>
-    </a>
-  );
-}
-
-function InfoRow({ icon, children }) {
-  return (
-    <p className="text-sm text-zinc-600 flex items-start gap-2.5">
-      <svg className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {QUICK_ACTION_ICONS[icon]}
-      </svg>
-      <span className="min-w-0">{children}</span>
-    </p>
-  );
-}
-
-const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function formatTime12h(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return m === 0 ? `${hour12} ${period}` : `${hour12}:${String(m).padStart(2, "0")} ${period}`;
-}
-
-// isOpenNow checks the given day's entry against the current time, handling
-// overnight ranges (e.g. a bar open 18:00-02:00, where close < open means
-// it crosses midnight into the next day).
-function isOpenNow(entry, nowMinutes) {
-  if (!entry || entry.closed || !entry.open || !entry.close) return false;
-  const [oh, om] = entry.open.split(":").map(Number);
-  const [ch, cm] = entry.close.split(":").map(Number);
-  const openMin = oh * 60 + om;
-  const closeMin = ch * 60 + cm;
-  if (closeMin > openMin) {
-    return nowMinutes >= openMin && nowMinutes < closeMin;
-  }
-  // Crosses midnight
-  return nowMinutes >= openMin || nowMinutes < closeMin;
-}
-
-// WeeklyHours renders a Google-Business-Profile-style hours list: a
-// collapsed row showing today's status (Open now / Closed, with today's
-// hours), expandable into the full week with today highlighted.
-function WeeklyHours({ businessHours, brandColor }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const now = new Date();
-  const todayIndex = now.getDay(); // 0=Sunday, matches business_hours' day field
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-  const byDay = new Map(businessHours.map((d) => [d.day, d]));
-  const today = byDay.get(todayIndex);
-  const openNow = isOpenNow(today, nowMinutes);
-
-  const todayLabel = !today || today.closed ? "Closed today" : `${formatTime12h(today.open)} – ${formatTime12h(today.close)}`;
-  const accentColor = brandColor || "#7c3aed";
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-2.5 text-left"
-      >
-        <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-        </svg>
-        <span className="text-sm flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="font-semibold" style={{ color: openNow ? "#059669" : "#dc2626" }}>
-            {openNow ? "Open now" : "Closed"}
-          </span>
-          <span className="text-zinc-400">&middot;</span>
-          <span className="text-zinc-600 truncate">{todayLabel}</span>
-        </span>
-        <svg
-          className={`w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
-
-      {expanded && (
-        <div className="mt-3 space-y-1.5 fade-in">
-          {WEEKDAY_SHORT.map((label, day) => {
-            const entry = byDay.get(day);
-            const isToday = day === todayIndex;
-            return (
-              <div
-                key={day}
-                className={`flex items-center justify-between text-sm px-2.5 py-1.5 rounded-lg ${isToday ? "font-semibold" : "text-zinc-600"}`}
-                style={isToday ? { backgroundColor: `${accentColor}14`, color: accentColor } : undefined}
-              >
-                <span>{label}</span>
-                <span>
-                  {!entry || entry.closed ? "Closed" : `${formatTime12h(entry.open)} – ${formatTime12h(entry.close)}`}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
 
 function Spinner() {
   return (
-    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
   );
 }
