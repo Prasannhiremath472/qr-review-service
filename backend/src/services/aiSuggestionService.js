@@ -236,6 +236,11 @@ async function callGemini(systemPrompt, userPrompt, temperature, maxTokens) {
     generationConfig: {
       temperature,
       maxOutputTokens: maxTokens,
+      // Gemini 2.5 Flash "thinks" by default and those hidden tokens count
+      // against maxOutputTokens, which cut reviews off mid-sentence. A short
+      // review needs no reasoning, so turn thinking off for the 2.5 Flash
+      // models (other models reject or ignore the field, so leave them alone).
+      ...(/gemini-2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
     },
     safetySettings: SAFETY_SETTINGS,
   };
@@ -275,7 +280,20 @@ async function callGemini(systemPrompt, userPrompt, temperature, maxTokens) {
     throw new Error(`no content returned from Gemini (finishReason: ${reason})`);
   }
 
-  return parts[0].text;
+  const text = parts[0].text;
+
+  // Hit the output limit: the review is cut off. Keep only the complete
+  // sentences; if there is nothing usable, fail so the caller uses a
+  // fallback template instead of showing a fragment to the customer.
+  if (candidate.finishReason === "MAX_TOKENS") {
+    const end = Math.max(text.lastIndexOf("."), text.lastIndexOf("!"), text.lastIndexOf("?"), text.lastIndexOf("।"));
+    if (end < 20) {
+      throw new Error("Gemini response was cut off (MAX_TOKENS) with no complete sentence");
+    }
+    return text.slice(0, end + 1);
+  }
+
+  return text;
 }
 
 function generateFallback(businessName, businessType, city, rating, serviceKeywords, lang) {
@@ -307,7 +325,7 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
   const userPrompt = buildUserPrompt(businessName, businessType, city, rating, safeServiceTaken, serviceKeywords, lang, highlights);
 
   try {
-    const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, betterQuality ? 450 : 300);
+    const rawContent = await callGemini(systemPrompt, userPrompt, 1.2, betterQuality ? 700 : 512);
     let review = rawContent.trim().replace(/^"|"$/g, "");
 
     // Local content-safety backstop, checked regardless of language — a
