@@ -327,6 +327,9 @@ async function generateSuggestions(businessName, businessType, city, rating, ser
     }
     return { review };
   } catch (err) {
+    // Log why Gemini failed (bad key, quota, model name, timeout) so it shows
+    // up in the host's runtime logs; the customer still gets the fallback.
+    console.error("Gemini suggestion failed, using fallback:", err.message);
     return generateFallback(businessName, businessType, city, rating, serviceKeywords, lang);
   }
 }

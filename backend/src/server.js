@@ -42,6 +42,9 @@ async function start() {
 
   app.listen(config.port, () => {
     console.log(`QR Review Service starting on port ${config.port}`);
+    if (!config.geminiKey) {
+      console.warn("GEMINI_API_KEY is not set: AI review suggestions will use the built-in fallback templates.");
+    }
   });
 }
 
