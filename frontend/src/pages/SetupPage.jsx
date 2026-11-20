@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { activateQrCode, uploadShopPhoto } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 import { BUSINESS_TYPES } from "../constants/businessTypes.js";
 import { resolveReviewUrl, REVIEW_URL_PREFIX } from "../lib/googleReview.js";
 import ResolvedUrlPreview from "../components/ResolvedUrlPreview.jsx";
@@ -9,6 +10,7 @@ import ServicesEditor from "../components/ServicesEditor.jsx";
 import BusinessHoursEditor from "../components/BusinessHoursEditor.jsx";
 
 export default function SetupPage({ qrId }) {
+  useDocumentTitle("Activate your QR code · ReviewGenie");
   const { user, loading } = useAuth();
 
   if (loading) {

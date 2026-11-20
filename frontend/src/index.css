@@ -286,3 +286,11 @@ a {
     page-break-inside: avoid;
   }
 }
+
+/* ---------- Tailwind (build-time) ----------
+   Placed last on purpose: the old runtime CDN script injected its stylesheet
+   after this file, so Tailwind base/utilities override the rules above. Keeping
+   that order keeps the rendered result identical. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

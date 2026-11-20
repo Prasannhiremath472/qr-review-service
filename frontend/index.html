@@ -5,48 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#6d28d9" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- This is a login-gated app plus customer review pages, not content meant to rank:
+         keep every route out of search results. (robots.txt deliberately still allows
+         crawling so search engines can actually see this directive.) -->
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/png" href="/siteidentity1.png" />
     <link rel="apple-touch-icon" href="/siteidentity1.png" />
     <title>ReviewGenie</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&family=Roboto:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Roboto:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script>
-      // The customer review page uses the semantic tokens below (see .rv-theme in index.css).
-      const rv = (name) => `rgb(var(--rv-${name}) / <alpha-value>)`;
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              display: ["Outfit", "Roboto", "Noto Sans Devanagari", "sans-serif"],
-              review: ["Roboto", "Noto Sans Devanagari", "system-ui", "sans-serif"],
-            },
-            colors: {
-              background: rv("background"),
-              foreground: rv("foreground"),
-              card: rv("card"),
-              primary: rv("primary"),
-              "primary-foreground": rv("primary-foreground"),
-              muted: rv("muted"),
-              "muted-foreground": rv("muted-foreground"),
-              star: rv("star"),
-              "star-soft": rv("star-soft"),
-              lavender: rv("lavender"),
-              destructive: rv("destructive"),
-              border: rv("border"),
-            },
-            boxShadow: {
-              card: "0 12px 40px -12px rgba(30, 41, 59, 0.25)",
-              float: "0 6px 18px -4px rgba(30, 41, 59, 0.35)",
-            },
-          },
-        },
-      };
-    </script>
   </head>
   <body>
     <div id="root"></div>

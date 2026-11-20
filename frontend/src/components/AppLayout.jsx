@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { useOwnerShop } from "../auth/OwnerShopContext.jsx";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 
 const ICONS = {
   dashboard: (
@@ -92,6 +93,7 @@ export const NAV_CONFIG = {
 };
 
 export default function AppLayout({ children, title, subtitle }) {
+  useDocumentTitle(title ? `${title} · ReviewGenie` : undefined);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

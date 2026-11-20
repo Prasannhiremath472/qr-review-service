@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { login as loginRequest } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 
 function defaultHomeFor(role) {
   if (role === "ADMIN") return "/admin";
@@ -11,6 +12,7 @@ function defaultHomeFor(role) {
 }
 
 export default function LoginPage() {
+  useDocumentTitle("Sign in · ReviewGenie");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -29,6 +29,7 @@ import {
 } from "../components/review/icons.jsx";
 import { LANGS, TAGS, UI, tagLabel } from "../lib/reviewI18n.js";
 import { compressImage } from "../lib/imageCompress.js";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 
 // Converts a "#rrggbb" / "#rgb" brand colour to the space-separated RGB
 // channels the .rv-theme tokens use. Returns null for anything unparseable
@@ -160,6 +161,7 @@ function copyToClipboard(text) {
 }
 
 function ReviewFlow({ shopInfo, qrId }) {
+  useDocumentTitle(`${shopInfo.shop_name} – Leave a review`);
   const [customerName, setCustomerName] = useState("");
   const [selectedServices, setSelectedServices] = useState([]);
   const serviceTaken = selectedServices.join(", ");

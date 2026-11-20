@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/itech-logo.jpg";
 import { INFINITY } from "../lib/infinity.js";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 import { ArrowLeftIcon, WhatsAppIcon } from "../components/review/icons.jsx";
 
 const field =
@@ -11,6 +12,7 @@ const field =
 // doesn't store anything: it opens WhatsApp to Infinity with the details
 // pre-filled so the conversation continues there.
 export default function JoinPage() {
+  useDocumentTitle(`Join ${INFINITY.name}`);
   const [form, setForm] = useState({ name: "", phone: "", business: "", service: "", message: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();

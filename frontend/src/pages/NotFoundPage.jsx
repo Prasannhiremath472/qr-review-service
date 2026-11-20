@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import useDocumentTitle from "../lib/useDocumentTitle.js";
 
 export default function NotFoundPage() {
+  useDocumentTitle("Page not found · ReviewGenie");
   return (
     <div className="app-bg min-h-screen flex items-center justify-center p-4">
       <div className="app-card fade-in max-w-sm w-full text-center px-8 py-10">

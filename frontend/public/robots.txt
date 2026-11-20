@@ -1,0 +1,5 @@
+# This site is a login-gated app and customer review pages, not content meant
+# to rank. Pages are kept out of search results with <meta name="robots"
+# content="noindex, nofollow"> in index.html; crawling stays allowed so that tag is seen.
+User-agent: *
+Allow: /
